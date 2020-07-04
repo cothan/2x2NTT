@@ -1,7 +1,7 @@
 #include "../ref/newhope_ntt.h"
 #include "../hls/hls_ntt_mul.h"
 
-int compare(poly *r, uint64_t hls_r)
+int compare(poly *r, uint64_t *hls_r)
 {
     uint16_t a[4];
     uint16_t b[4];
@@ -19,7 +19,7 @@ int compare(poly *r, uint64_t hls_r)
         {
             if (a[j] != b[j])
             {
-                printf("[%u] %u != %u", i + j, a[j], b[j]);
+                printf("[%u] %u != %u\n", i + j, a[j], b[j]);
                 error = true;
             }
         }
@@ -42,10 +42,10 @@ int main()
 
         pack(i, i + 1, i + 2, i + 3, hls_r, i / 4);
     }
-    mul_coefficients(r_gold, gammas_bitrev_montgomery);
+    mul_coefficients(r_gold.coeffs, gammas_bitrev_montgomery);
     hls_poly_ntt_mul(hls_r, PSIS);
 
-    uint16_t res = compare(r_gold, hls_r);
+    uint16_t res = compare(&r_gold, hls_r);
 
     return res;
 }

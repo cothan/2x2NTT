@@ -313,12 +313,12 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
             printf("[Error] SIPO\n");
             return;
         }
-        pack(&out_1, &out_2, &out_3, &out_4, ram, addr_writeback);
+        pack(out_1, out_2, out_3, out_4, ram, addr_writeback);
     }
 
 }
 
-void hls_poly_ntt_mul(uint64_t ram, enum STATE state)
+void hls_poly_ntt_mul(uint64_t *ram, enum STATE state)
 {
     uint16_t *ram1 = NULL, 
              *ram2 = NULL;
@@ -337,7 +337,7 @@ void hls_poly_ntt_mul(uint64_t ram, enum STATE state)
     case MUL:
         // ram1 = gammas_bitrev_montgomery;
         // ram2 = gammas_bitrev_montgomery;
-        printf("[Error] Not Finished\n"):
+        printf("[Error] Not Finished\n");
         return;
     
     case INTT:
@@ -349,7 +349,7 @@ void hls_poly_ntt_mul(uint64_t ram, enum STATE state)
         // ram1 = omegas_inv_bitrev_montgomery;
         // ram2 = omegas_inv_bitrev_montgomery;
         // hls_ntt(ram, ram1, ram2, INTT);
-        printf("[Error] Not Finished\n"):
+        printf("[Error] Not Finished\n");
         return;
 
     default:
