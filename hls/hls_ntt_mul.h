@@ -17,7 +17,7 @@ enum STATE
     IPSIS,
 };
 void unpack(uint64_t *ram, uint16_t index, uint16_t *A, uint16_t *B, uint16_t *C, uint16_t *D);
-void pack(uint16_t A, uint16_t B, uint16_t C, uint16_t D, uint64_t *ram, uint64_t index);
+void pack(uint16_t A, uint16_t B, uint16_t C, uint16_t D, uint64_t *ram, uint16_t index);
 void hls_poly_ntt_mul(uint64_t *ram, enum STATE state);
 
 #endif

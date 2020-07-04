@@ -11,8 +11,9 @@ void unpack(uint64_t *ram, uint16_t index, uint16_t *A, uint16_t *B, uint16_t *C
     *D = (tmp >> 48) & 0xffff;
 }
 
-void pack(uint16_t A, uint16_t B, uint16_t C, uint16_t D, uint64_t *ram, uint64_t index)
+void pack(uint16_t A, uint16_t B, uint16_t C, uint16_t D, uint64_t *ram, uint16_t index)
 {
+    // printf("ram[%d] <= [%5d ,%5d ,%5d ,%5d]\n", index, A, B, C, D);
     // Memory style D|C|B|A
     uint64_t tmp = 0;
     tmp = D;
@@ -36,10 +37,23 @@ void SIPO(uint16_t *sipo, int length)
     }
 }
 
+void printSIPO(uint16_t *sipo, int length, char const *string)
+{
+    printf("%s: [", string);
+    for (int i = 0; i < length; i++)
+    {
+        printf("%4d,", sipo[i]);
+    }
+    printf("]\n");
+}
+
 #if (NEWHOPE_N == 1024)
-
 #define NEWHOPE_LOGN 10
-
+#elif (NEWHOPE_N == 512)
+#define NEWHOPE_LOGN 9
+#else
+#error ("Check NEWHOPE_N")
+#endif
 void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
 {
     // Define Signal
@@ -113,7 +127,8 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
              idx2 = 0,
              idx3 = 0,
              idx4 = 0,
-             counter = 0;
+             counter = 0,
+             sipo_counter = 0;
     // End Variables
 
     for (uint16_t l = 0; l < layers; l += 2)
@@ -152,8 +167,8 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
                     idx2 = ((b << 2) + 3) >> 1;
                 }
 
-                printf("|%3d| %4d * ram1[%4d] (%4d)\n", b, B, idx1, ram1[idx1]);
-                printf("|%3d| %4d * ram1[%4d] (%4d)\n", b, D, idx2, ram1[idx2]);
+                // printf("|%3d| %4d * ram1[%4d] (%4d)\n", b, B, idx1, ram1[idx1]);
+                // printf("|%3d| %4d * ram1[%4d] (%4d)\n", b, D, idx2, ram1[idx2]);
 
                 B = montgomery_reduce((uint32_t) B * ram1[idx1]);
                 D = montgomery_reduce((uint32_t) D * ram1[idx2]);
@@ -190,8 +205,8 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
                     idx4 = ((b << 2) + 2) >> 1;
                 }
 
-                printf("|%3d| %4d * ram2[%4d] (%4d)\n", b ,B_prime, idx3, ram2[idx3]);
-                printf("|%3d| %4d * ram2[%4d] (%4d)\n", b ,D_prime, idx4, ram2[idx4]);
+                // printf("|%3d| %4d * ram2[%4d] (%4d)\n", b ,B_prime, idx3, ram2[idx3]);
+                // printf("|%3d| %4d * ram2[%4d] (%4d)\n", b ,D_prime, idx4, ram2[idx4]);
 
                 A_prime = s ? A_prime: 0;
                 B_prime = montgomery_reduce(((uint32_t) B_prime * ram2[idx3]));
@@ -209,6 +224,20 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
                 D_prime = s ? D_prime : D_save;
 
                 // SIPO
+                // 3 state: SHIFT - WRITE - CHECK 
+                // SHIFT
+                SIPO(sipo_idx, 4);
+                SIPO(sipo_a, 4);
+                SIPO(sipo_b, 5);
+                SIPO(sipo_c, 6);
+                SIPO(sipo_d, 7);
+                // printSIPO(sipo_idx, 4, "IDX");
+                // printSIPO(sipo_a, 4, "A");
+                // printSIPO(sipo_b, 5, "B");
+                // printSIPO(sipo_c, 6, "C");
+                // printSIPO(sipo_d, 7, "D");
+
+                // WRITE
                 sipo_idx[0] = b;
                 if (last_layer)
                 {
@@ -223,18 +252,13 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
                     sipo_b[0] = B_prime;
                     sipo_c[0] = C_prime;
                     sipo_d[0] = D_prime;
-                }
-                SIPO(sipo_idx, 4);
-                SIPO(sipo_a, 4);
-                SIPO(sipo_b, 5);
-                SIPO(sipo_c, 6);
-                SIPO(sipo_d, 7);
+                }                
 
+                // CHECK
                 counter++;
-                if (counter >= 4)
+                if (counter > 3)
                 {
                     enable_write = true;
-                    counter = 0;
                 }
 
                 if (enable_write)
@@ -242,7 +266,7 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
                     addr_writeback = sipo_idx[3];
                     if (s)
                     {
-                        switch (counter & 0x3)
+                        switch (sipo_counter & 0x3)
                         {
                         case 0:
                             // SIPO A writeback
@@ -273,22 +297,24 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
                             out_4 = sipo_d[3];
                             break;
                         default:
-                            printf("[Error] SIPO counter = %u\n", counter );
+                            printf("[Error] SIPO counter = %u\n", sipo_counter );
                             return;
                         }
-                        counter++;
+                        sipo_counter++;
                     }
                     else
                     {
                         out_1 = sipo_a[3];
-                        out_2 = sipo_b[4];
-                        out_3 = sipo_c[5];
-                        out_4 = sipo_d[6];
+                        out_2 = sipo_b[3];
+                        out_3 = sipo_c[3];
+                        out_4 = sipo_d[3];
                     }
                     
                     pack(out_1, out_2, out_3, out_4, ram, addr_writeback);
                 }
-                printf("\n");
+                
+                               
+                // printf("\n");
             }
             NTT_idx += omega_idx1;
             NTT_idx3 += omega_idx2;
@@ -296,55 +322,65 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
         }
     }
     // Write back remaning of SIPO
-    // TODO: DEBUG 
-    /*
+    // 2 states: SHIFT - CHECK
     for (uint16_t i = 0; i < 3; i++)
     {
+        // SHIFT
         SIPO(sipo_idx, 4);
         SIPO(sipo_a, 4);
         SIPO(sipo_b, 5);
         SIPO(sipo_c, 6);
         SIPO(sipo_d, 7);
-
+        // CHECK
         addr_writeback = sipo_idx[3];
-        counter++;
-        switch (counter & 0b11)
+        if (s)
         {
-        case 0:
-            // SIPO A writeback
+            switch (sipo_counter & 0x3)
+            {
+            case 0:
+                // SIPO A writeback
+                out_1 = sipo_a[3];
+                out_2 = sipo_a[2];
+                out_3 = sipo_a[1];
+                out_4 = sipo_a[0];
+                break;
+            case 1:
+                // SIPO B writeback
+                out_1 = sipo_b[4];
+                out_2 = sipo_b[3];
+                out_3 = sipo_b[2];
+                out_4 = sipo_b[1];
+                break;
+            case 2:
+                // SIPO C writeback
+                out_1 = sipo_c[5];
+                out_2 = sipo_c[4];
+                out_3 = sipo_c[3];
+                out_4 = sipo_c[2];
+                break;
+            case 3:
+                // SIPO D writeback
+                out_1 = sipo_d[6];
+                out_2 = sipo_d[5];
+                out_3 = sipo_d[4];
+                out_4 = sipo_d[3];
+                break;
+            default:
+                printf("[Error] SIPO counter = %u\n", sipo_counter );
+                return;
+            }
+            sipo_counter++;
+        }
+        else
+        {
             out_1 = sipo_a[3];
-            out_2 = sipo_a[2];
-            out_3 = sipo_a[1];
-            out_4 = sipo_a[0];
-            break;
-        case 1:
-            // SIPO B writeback
-            out_1 = sipo_b[4];
             out_2 = sipo_b[3];
-            out_3 = sipo_b[2];
-            out_4 = sipo_b[1];
-            break;
-        case 2:
-            // SIPO C writeback
-            out_1 = sipo_c[5];
-            out_2 = sipo_c[4];
             out_3 = sipo_c[3];
-            out_4 = sipo_c[2];
-            break;
-        case 3:
-            // SIPO D writeback
-            out_1 = sipo_d[6];
-            out_2 = sipo_d[5];
-            out_3 = sipo_d[4];
             out_4 = sipo_d[3];
-            break;
-        default:
-            printf("[Error] SIPO\n");
-            return;
         }
         pack(out_1, out_2, out_3, out_4, ram, addr_writeback);
     }
-    */
+    
 
 }
 
@@ -388,4 +424,3 @@ void hls_poly_ntt_mul(uint64_t *ram, enum STATE state)
     }
 }
 
-#endif
