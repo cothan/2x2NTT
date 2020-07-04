@@ -1,18 +1,5 @@
-#include "../ref/newhope_params.h"
-#include "../ref/newhope_poly.h"
-#include "../ref/newhope_reduce.h"
-#include <stdbool.h>
-
+#include "hls_ntt_mul.h"
 #include "hls_const.c"
-
-enum STATE
-{
-    PSIS,
-    NTT,
-    MUL,
-    INTT,
-    IPSIS
-};
 
 void unpack(uint64_t *ram, uint16_t index, uint16_t *A, uint16_t *B, uint16_t *C, uint16_t *D)
 {
@@ -24,17 +11,17 @@ void unpack(uint64_t *ram, uint16_t index, uint16_t *A, uint16_t *B, uint16_t *C
     *D = (tmp >> 48) & 0xffff;
 }
 
-void pack(uint16_t *A, uint16_t *B, uint16_t *C, uint16_t *D, uint64_t *ram, uint64_t index)
+void pack(uint16_t A, uint16_t B, uint16_t C, uint16_t D, uint64_t *ram, uint64_t index)
 {
     // Memory style D|C|B|A
     uint64_t tmp = 0;
-    tmp = *D;
+    tmp = D;
     tmp = tmp << 16;
-    tmp = tmp | *C;
+    tmp = tmp | C;
     tmp = tmp << 16;
-    tmp = tmp | *B;
+    tmp = tmp | B;
     tmp = tmp << 16;
-    tmp = tmp | *A;
+    tmp = tmp | A;
 
     ram[index] = tmp;
 }
@@ -135,6 +122,7 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
                 // TODO: rename b to ram_idx
                 uint16_t b = k + j;
 
+                // Memory style: D|C|B|A
                 unpack(ram, b, &A, &B, &C, &D);
 
                 // 1st layer
@@ -189,8 +177,8 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
                     idx4 = (b << 2) + 2;
                 }
 
-                B_prime = montgomery_reduce(((uint32_t) B_prime * ram2[idx3]);
-                D_prime = montgomery_reduce(((uint32_t) D_prime * ram2[idx4]);
+                B_prime = montgomery_reduce(((uint32_t) B_prime * ram2[idx3]));
+                D_prime = montgomery_reduce(((uint32_t) D_prime * ram2[idx4]));
 
                 if (!s)
                 {
@@ -274,7 +262,7 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
                         printf("[Error] SIPO\n");
                         return;
                     }
-                    pack(&out_1, &out_2, &out_3, &out_4, ram, addr_writeback);
+                    pack(out_1, out_2, out_3, out_4, ram, addr_writeback);
                 }
             }
             NTT_idx += omega_idx1;
