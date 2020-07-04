@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 #ifndef NEWHOPE_N
-#define NEWHOPE_N 1024
+#define NEWHOPE_N 512
 #endif
 
 #define NEWHOPE_Q 12289 
