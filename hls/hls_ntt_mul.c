@@ -137,7 +137,7 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
 
                 // Memory style: D|C|B|A
                 unpack(ram, b, &A, &B, &C, &D);
-                printf("|%3d| %4d %4d %4d %4d\n", b,  A, B, C, D);
+                // printf("|%3d| %4d %4d %4d %4d\n", b,  A, B, C, D);
 
                 // 1st layer
 
@@ -148,8 +148,8 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
                 }
                 else
                 {
-                    idx1 = (b << 2) + 1;
-                    idx2 = (b << 2) + 3;
+                    idx1 = ((b << 2) + 1) >> 1;
+                    idx2 = ((b << 2) + 3) >> 1;
                 }
 
                 printf("|%3d| %4d * ram1[%4d] (%4d)\n", b, B, idx1, ram1[idx1]);
@@ -186,8 +186,8 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
                 }
                 else
                 {
-                    idx3 = (b << 2);
-                    idx4 = (b << 2) + 2;
+                    idx3 = ((b << 2)) >> 1;
+                    idx4 = ((b << 2) + 2) >> 1;
                 }
 
                 printf("|%3d| %4d * ram2[%4d] (%4d)\n", b ,B_prime, idx3, ram2[idx3]);
@@ -355,13 +355,13 @@ void hls_poly_ntt_mul(uint64_t *ram, enum STATE state)
     switch (state)
     {
     case PSIS:    
-        ram1 = gammas_bitrev_montgomery;
-        ram2 = gammas_bitrev_montgomery;
+        ram1 = gammas_bitrev_montgomery_odd;
+        ram2 = gammas_bitrev_montgomery_even;
         hls_ntt(ram, ram1, ram2, PSIS);
         break;
     case IPSIS:
-        ram1 = gammas_inv_montgomery;
-        ram2 = gammas_inv_montgomery;
+        ram1 = gammas_bitrev_montgomery_odd;
+        ram2 = gammas_bitrev_montgomery_even;
         hls_ntt(ram, ram1, ram2, IPSIS);
         break;
     case MUL:
