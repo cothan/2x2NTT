@@ -1,6 +1,8 @@
 #ifndef PARAMS_H
 #define PARAMS_H
 
+#include <stdio.h>
+
 #ifndef NEWHOPE_N
 #define NEWHOPE_N 1024
 #endif
