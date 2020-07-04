@@ -29,8 +29,9 @@ void pack(uint16_t A, uint16_t B, uint16_t C, uint16_t D, uint64_t *ram, uint64_
 void SIPO(uint16_t *sipo, int length)
 {
     // Shift left by one
-    for (int i = length; i >= 0; i--)
+    for (int i = length-1; i > 0; i--)
     {
+        // printf("SIPO: sipo[%d] <= sipo[%d] (%d <= %d)\n", i, i-1, sipo[i], sipo[i-1]);
         sipo[i] = sipo[i - 1];
     }
 }
@@ -58,16 +59,20 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
     // End SIPO
 
     // Select state to operate
+    uint16_t layers = 0;
     switch (state)
     {
     case PSIS:
         s = false;
+        layers = 2;
         break;
     case MUL:
         s = false;
+        layers = 2;
         break;
     case IPSIS:
         s = false;
+        layers = 2;
         break;
 
     case NTT:
@@ -85,12 +90,20 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
              B = 0,
              C = 0,
              D = 0,
+
              B_save = 0,
              D_save = 0,
+
              A_hat = 0,
              B_hat = 0,
              C_hat = 0,
              D_hat = 0,
+
+             A_mid = 0,
+             B_mid = 0,
+             C_mid = 0,
+             D_mid = 0,
+
              A_prime = 0,
              B_prime = 0,
              C_prime = 0,
@@ -103,7 +116,7 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
              counter = 0;
     // End Variables
 
-    for (uint16_t l = 0; l < NEWHOPE_LOGN; l += 2)
+    for (uint16_t l = 0; l < layers; l += 2)
     {
         uint16_t omega_idx1 = NEWHOPE_N >> (l + 1);
         uint16_t omega_idx2 = NEWHOPE_N >> (l + 2);
@@ -124,6 +137,7 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
 
                 // Memory style: D|C|B|A
                 unpack(ram, b, &A, &B, &C, &D);
+                printf("|%3d| %4d %4d %4d %4d\n", b,  A, B, C, D);
 
                 // 1st layer
 
@@ -138,31 +152,30 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
                     idx2 = (b << 2) + 3;
                 }
 
+                printf("|%3d| %4d * ram1[%4d] (%4d)\n", b, B, idx1, ram1[idx1]);
+                printf("|%3d| %4d * ram1[%4d] (%4d)\n", b, D, idx2, ram1[idx2]);
+
                 B = montgomery_reduce((uint32_t) B * ram1[idx1]);
                 D = montgomery_reduce((uint32_t) D * ram1[idx2]);
                 B_save = B;
                 D_save = D;
 
                 A_hat = A + B;
-                B_hat = C + D;
-                C_hat = A - B;
+                B_hat = A - B;
+                C_hat = C + D;
                 D_hat = C - D;
 
                 // Middle
+                // Style A | A^ | A'
+                A_mid = s ? A_hat : A;
+                B_mid = C_hat;
+                C_mid = B_hat;
+                D_mid = s ? D_hat : C;
 
-                A_prime = A_hat;
-                C_prime = C_hat;
-
-                if (s)
-                {
-                    B_prime = B_hat;
-                    D_prime = D_hat;
-                }
-                else
-                {
-                    B_prime = A_hat;
-                    D_prime = C_hat;
-                }
+                A_prime = A_mid;
+                B_prime = s ? B_mid : A_mid;
+                C_prime = C_mid;
+                D_prime = D_mid;
 
                 // 2nd Layer
 
@@ -177,34 +190,32 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
                     idx4 = (b << 2) + 2;
                 }
 
+                printf("|%3d| %4d * ram2[%4d] (%4d)\n", b ,B_prime, idx3, ram2[idx3]);
+                printf("|%3d| %4d * ram2[%4d] (%4d)\n", b ,D_prime, idx4, ram2[idx4]);
+
+                A_prime = s ? A_prime: 0;
                 B_prime = montgomery_reduce(((uint32_t) B_prime * ram2[idx3]));
+                C_prime = s ? C_prime: 0;
                 D_prime = montgomery_reduce(((uint32_t) D_prime * ram2[idx4]));
-
-                if (!s)
-                {
-                    A_prime = 0;
-                    C_prime = 0;
-                }
-
+                
                 A_prime = A_prime + B_prime;
                 B_prime = A_prime - B_prime;
                 C_prime = C_prime + D_prime;
                 D_prime = C_prime - D_prime;
 
-                if (!s)
-                {
-                    B_prime = B_save;
-                    D_prime = D_save;
-                }
+                // A_prime = A_prime;
+                // C_prime = C_prime;
+                B_prime = s ? B_prime : B_save;
+                D_prime = s ? D_prime : D_save;
 
                 // SIPO
                 sipo_idx[0] = b;
                 if (last_layer)
                 {
-                    sipo_a[0] = A_hat;
-                    sipo_b[0] = B_hat;
-                    sipo_c[0] = C_hat;
-                    sipo_d[0] = D_hat;
+                    sipo_a[0] = A_mid;
+                    sipo_b[0] = B_mid;
+                    sipo_c[0] = C_mid;
+                    sipo_d[0] = D_mid;
                 }
                 else
                 {
@@ -229,41 +240,55 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
                 if (enable_write)
                 {
                     addr_writeback = sipo_idx[3];
-                    counter++;
-                    switch (counter & 0b11)
+                    if (s)
                     {
-                    case 1:
-                        // SIPO A writeback
-                        out_1 = sipo_a[3];
-                        out_2 = sipo_a[2];
-                        out_3 = sipo_a[1];
-                        out_4 = sipo_a[0];
-                        break;
-                    case 2:
-                        // SIPO B writeback
-                        out_1 = sipo_b[4];
-                        out_2 = sipo_b[3];
-                        out_3 = sipo_b[2];
-                        out_4 = sipo_b[1];
-                        break;
-                    case 3:
-                        // SIPO C writeback
-                        out_1 = sipo_c[5];
-                        out_2 = sipo_c[4];
-                        out_3 = sipo_c[3];
-                        out_4 = sipo_c[2];
-                    case 4:
-                        // SIPO D writeback
-                        out_1 = sipo_d[6];
-                        out_2 = sipo_d[5];
-                        out_3 = sipo_d[4];
-                        out_4 = sipo_d[3];
-                    default:
-                        printf("[Error] SIPO\n");
-                        return;
+                        switch (counter & 0x3)
+                        {
+                        case 0:
+                            // SIPO A writeback
+                            out_1 = sipo_a[3];
+                            out_2 = sipo_a[2];
+                            out_3 = sipo_a[1];
+                            out_4 = sipo_a[0];
+                            break;
+                        case 1:
+                            // SIPO B writeback
+                            out_1 = sipo_b[4];
+                            out_2 = sipo_b[3];
+                            out_3 = sipo_b[2];
+                            out_4 = sipo_b[1];
+                            break;
+                        case 2:
+                            // SIPO C writeback
+                            out_1 = sipo_c[5];
+                            out_2 = sipo_c[4];
+                            out_3 = sipo_c[3];
+                            out_4 = sipo_c[2];
+                            break;
+                        case 3:
+                            // SIPO D writeback
+                            out_1 = sipo_d[6];
+                            out_2 = sipo_d[5];
+                            out_3 = sipo_d[4];
+                            out_4 = sipo_d[3];
+                            break;
+                        default:
+                            printf("[Error] SIPO counter = %u\n", counter );
+                            return;
+                        }
+                        counter++;
                     }
+                    else
+                    {
+                        out_1 = sipo_a[3];
+                        out_2 = sipo_b[4];
+                        out_3 = sipo_c[5];
+                        out_4 = sipo_d[6];
+                    }
+                    
                     pack(out_1, out_2, out_3, out_4, ram, addr_writeback);
                 }
+                printf("\n");
             }
             NTT_idx += omega_idx1;
             NTT_idx3 += omega_idx2;
@@ -271,6 +296,8 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
         }
     }
     // Write back remaning of SIPO
+    // TODO: DEBUG 
+    /*
     for (uint16_t i = 0; i < 3; i++)
     {
         SIPO(sipo_idx, 4);
@@ -283,38 +310,41 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
         counter++;
         switch (counter & 0b11)
         {
-        case 1:
+        case 0:
             // SIPO A writeback
             out_1 = sipo_a[3];
             out_2 = sipo_a[2];
             out_3 = sipo_a[1];
             out_4 = sipo_a[0];
             break;
-        case 2:
+        case 1:
             // SIPO B writeback
             out_1 = sipo_b[4];
             out_2 = sipo_b[3];
             out_3 = sipo_b[2];
             out_4 = sipo_b[1];
             break;
-        case 3:
+        case 2:
             // SIPO C writeback
             out_1 = sipo_c[5];
             out_2 = sipo_c[4];
             out_3 = sipo_c[3];
             out_4 = sipo_c[2];
-        case 4:
+            break;
+        case 3:
             // SIPO D writeback
             out_1 = sipo_d[6];
             out_2 = sipo_d[5];
             out_3 = sipo_d[4];
             out_4 = sipo_d[3];
+            break;
         default:
             printf("[Error] SIPO\n");
             return;
         }
         pack(out_1, out_2, out_3, out_4, ram, addr_writeback);
     }
+    */
 
 }
 
