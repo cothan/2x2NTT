@@ -168,6 +168,33 @@ void ntt(uint16_t * a, const uint16_t* omega)
   }
 }
 
+void 
+ntt_copy(uint16_t * a, const uint16_t* omega)
+{
+  int i, start, j, jTwiddle, distance;
+  uint16_t temp, W;
+
+
+  for(i=0;i<9;i++)
+  {
+    distance = (1<<i);
+    for(start = 0; start < distance;start++)
+    {
+      jTwiddle = 0;
+      for(j=start;j<NEWHOPE_N-1;j+=2*distance)
+      {
+        W = omega[jTwiddle++];
+        temp = a[j];
+        // printf("a[%d] + a[%d]*%d (%d)\n", j, j+distance, W, jTwiddle - 1);
+        // printf("%d + %d*%d\n", a[j], a[j+distance], W);
+        a[j] = (temp + a[j + distance]) % NEWHOPE_Q; 
+        a[j + distance] = montgomery_reduce((W * ((uint32_t)temp + 3*NEWHOPE_Q - a[j + distance])));
+      }
+    }
+  }
+}
+
+
 #elif (NEWHOPE_N == 1024)
 
 void /*************************************************
@@ -213,6 +240,33 @@ ntt(uint16_t * a, const uint16_t* omega)
         W = omega[jTwiddle++];
         temp = a[j];
         a[j] = (temp + a[j + distance]) % NEWHOPE_Q;
+        a[j + distance] = montgomery_reduce((W * ((uint32_t)temp + 3*NEWHOPE_Q - a[j + distance])));
+      }
+    }
+  }
+}
+
+void 
+ntt_copy(uint16_t * a, const uint16_t* omega)
+{
+  int i, start, j, jTwiddle, distance;
+  uint16_t temp, W;
+
+
+  for(i=0;i<10;i++)
+  {
+    // Even level
+    distance = (1<<i);
+    for(start = 0; start < distance;start++)
+    {
+      jTwiddle = 0;
+      for(j=start;j<NEWHOPE_N-1;j+=2*distance)
+      {
+        W = omega[jTwiddle++];
+        temp = a[j];
+        // printf("b[%d] + b[%d]*%d (%d)\n", j, j+distance, W, jTwiddle - 1);
+        // printf("%d + %d*%d\n", a[j], a[j+distance], W);
+        a[j] = (temp + a[j + distance]) % NEWHOPE_Q; 
         a[j + distance] = montgomery_reduce((W * ((uint32_t)temp + 3*NEWHOPE_Q - a[j + distance])));
       }
     }

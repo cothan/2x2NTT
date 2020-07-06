@@ -10,5 +10,6 @@ extern uint16_t gammas_inv_montgomery[];
 void bitrev_vector(uint16_t* poly);
 void mul_coefficients(uint16_t* poly, const uint16_t* factors);
 void ntt(uint16_t* poly, const uint16_t* omegas);
+void ntt_copy(uint16_t* poly, const uint16_t* omegas);
 
 #endif
