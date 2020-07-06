@@ -13,7 +13,7 @@ void unpack(uint64_t *ram, uint16_t index, uint16_t *A, uint16_t *B, uint16_t *C
 
 void pack(uint16_t A, uint16_t B, uint16_t C, uint16_t D, uint64_t *ram, uint16_t index)
 {
-    // printf("ram[%d] <= [%5d ,%5d ,%5d ,%5d]\n", index, A, B, C, D);
+    printf("ram[%d] <= [%5d ,%5d ,%5d ,%5d]\n", index, A, B, C, D);
     // Memory style D|C|B|A
     uint64_t tmp = 0;
     tmp = D;
@@ -42,7 +42,7 @@ void printSIPO(uint16_t *sipo, int length, char const *string)
     printf("%s: [", string);
     for (int i = 0; i < length; i++)
     {
-        printf("%4d,", sipo[i]);
+        printf("%5d,", sipo[i]);
     }
     printf("]\n");
 }
@@ -60,6 +60,7 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
     bool s = false,
          last_layer = false,
          enable_write = false;
+    uint16_t mem = 0;
     // End Signal
 
     // Define SIPO
@@ -79,21 +80,30 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
     case PSIS:
         s = false;
         layers = 2;
+        mem = 1;
         break;
     case MUL:
         s = false;
         layers = 2;
+        mem = 1;
         break;
     case IPSIS:
         s = false;
         layers = 2;
+        mem = 1;
         break;
 
     case NTT:
         s = true;
+        // TODO: change back to NEWHOPE_LOGN
+        layers = 2;
+        mem = 0;
         break;
     case INTT:
+        // TODO: change back to NEWHOPE_LOGN
         s = true;
+        layers = 2;
+        mem = 0;
         break;
     default:
         printf("[Error] Invalid STATE\n");
@@ -152,7 +162,7 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
 
                 // Memory style: D|C|B|A
                 unpack(ram, b, &A, &B, &C, &D);
-                // printf("|%3d| %4d %4d %4d %4d\n", b,  A, B, C, D);
+                printf("|%3d| %4d %4d %4d %4d\n", b,  A, B, C, D);
 
                 // 1st layer
 
@@ -163,12 +173,12 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
                 }
                 else
                 {
-                    idx1 = ((b << 2) + 1) >> 1;
-                    idx2 = ((b << 2) + 3) >> 1;
+                    idx1 = ((b << 2) + 1) >> mem;
+                    idx2 = ((b << 2) + 3) >> mem;
                 }
 
-                // printf("|%3d| %4d * ram1[%4d] (%4d)\n", b, B, idx1, ram1[idx1]);
-                // printf("|%3d| %4d * ram1[%4d] (%4d)\n", b, D, idx2, ram1[idx2]);
+                printf("|%3d| %4d * ram1[%4d] (%4d)\n", b, B, idx1, ram1[idx1]);
+                printf("|%3d| %4d * ram1[%4d] (%4d)\n", b, D, idx2, ram1[idx2]);
 
                 B = montgomery_reduce((uint32_t) B * ram1[idx1]);
                 D = montgomery_reduce((uint32_t) D * ram1[idx2]);
@@ -201,12 +211,12 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
                 }
                 else
                 {
-                    idx3 = ((b << 2)) >> 1;
-                    idx4 = ((b << 2) + 2) >> 1;
+                    idx3 = ((b << 2)) >> mem;
+                    idx4 = ((b << 2) + 2) >> mem;
                 }
 
-                // printf("|%3d| %4d * ram2[%4d] (%4d)\n", b ,B_prime, idx3, ram2[idx3]);
-                // printf("|%3d| %4d * ram2[%4d] (%4d)\n", b ,D_prime, idx4, ram2[idx4]);
+                printf("|%3d| %4d * ram2[%4d] (%4d)\n", b ,B_prime, idx3, ram2[idx3]);
+                printf("|%3d| %4d * ram2[%4d] (%4d)\n", b ,D_prime, idx4, ram2[idx4]);
 
                 A_prime = s ? A_prime: 0;
                 B_prime = montgomery_reduce(((uint32_t) B_prime * ram2[idx3]));
@@ -231,12 +241,7 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
                 SIPO(sipo_b, 5);
                 SIPO(sipo_c, 6);
                 SIPO(sipo_d, 7);
-                // printSIPO(sipo_idx, 4, "IDX");
-                // printSIPO(sipo_a, 4, "A");
-                // printSIPO(sipo_b, 5, "B");
-                // printSIPO(sipo_c, 6, "C");
-                // printSIPO(sipo_d, 7, "D");
-
+                
                 // WRITE
                 sipo_idx[0] = b;
                 if (last_layer)
@@ -253,6 +258,12 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
                     sipo_c[0] = C_prime;
                     sipo_d[0] = D_prime;
                 }                
+
+                printSIPO(sipo_idx, 4, "IDX");
+                printSIPO(sipo_a, 4, "A");
+                printSIPO(sipo_b, 5, "B");
+                printSIPO(sipo_c, 6, "C");
+                printSIPO(sipo_d, 7, "D");
 
                 // CHECK
                 counter++;
@@ -314,7 +325,7 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state)
                 }
                 
                                
-                // printf("\n");
+                printf("\n");
             }
             NTT_idx += omega_idx1;
             NTT_idx3 += omega_idx2;
@@ -407,16 +418,17 @@ void hls_poly_ntt_mul(uint64_t *ram, enum STATE state)
         return;
     
     case INTT:
-        ram1 = omegas_inv_bitrev_montgomery;
-        ram2 = omegas_inv_bitrev_montgomery;
-        hls_ntt(ram, ram1, ram2, INTT);
-        break;
-    case NTT:
-        // ram1 = omegas_inv_bitrev_montgomery;
-        // ram2 = omegas_inv_bitrev_montgomery;
+        ram1 = gammas_bitrev_montgomery_odd;
+        ram2 = gammas_bitrev_montgomery_even;
         // hls_ntt(ram, ram1, ram2, INTT);
         printf("[Error] Not Finished\n");
         return;
+    case NTT:
+        ram1 = gammas_montgomery;
+        ram2 = gammas_montgomery;
+        hls_ntt(ram, ram1, ram2, NTT);
+        // printf("[Error] Not Finished\n");
+        break;
 
     default:
         printf("[Error] Invalid STATE\n");
@@ -424,3 +436,9 @@ void hls_poly_ntt_mul(uint64_t *ram, enum STATE state)
     }
 }
 
+// TODO: Write transpose, or eliminate it
+// void transpose(uint64_t *ram)
+// {
+//     uint64_t tmp;
+
+// }
