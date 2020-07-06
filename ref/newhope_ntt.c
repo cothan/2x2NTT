@@ -188,7 +188,7 @@ ntt_copy(uint16_t * a, const uint16_t* omega)
         // printf("a[%d] + a[%d]*%d (%d)\n", j, j+distance, W, jTwiddle - 1);
         // printf("%d + %d*%d\n", a[j], a[j+distance], W);
         a[j] = (temp + a[j + distance]) % NEWHOPE_Q; 
-        a[j + distance] = montgomery_reduce((W * ((uint32_t)temp + 3*NEWHOPE_Q - a[j + distance])));
+        a[j + distance] = montgomery_reduce(W * ((uint32_t)temp + 3*NEWHOPE_Q - a[j + distance]));
       }
     }
   }
@@ -267,7 +267,7 @@ ntt_copy(uint16_t * a, const uint16_t* omega)
         // printf("b[%d] + b[%d]*%d (%d)\n", j, j+distance, W, jTwiddle - 1);
         // printf("%d + %d*%d\n", a[j], a[j+distance], W);
         a[j] = (temp + a[j + distance]) % NEWHOPE_Q; 
-        a[j + distance] = montgomery_reduce((W * ((uint32_t)temp + 3*NEWHOPE_Q - a[j + distance])));
+        a[j + distance] = montgomery_reduce(W * ((uint32_t)temp + 3*NEWHOPE_Q - a[j + distance]));
       }
     }
   }
