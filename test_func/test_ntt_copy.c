@@ -55,10 +55,10 @@ int main()
 
     for (uint16_t i = 0; i < NEWHOPE_N; i += 4)
     {
-        a = i;
-        b = i + 1;
-        c = i + 2;
-        d = i + 3;
+        a = rand() % NEWHOPE_Q;
+        b = rand() % NEWHOPE_Q;
+        c = rand() % NEWHOPE_Q;
+        d = rand() % NEWHOPE_Q;
         r_gold.coeffs[i] = a;
         r_gold.coeffs[i + 1] = b;
         r_gold.coeffs[i + 2] = c;
