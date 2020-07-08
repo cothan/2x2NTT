@@ -158,6 +158,8 @@ int main()
         origin_poly.coeffs[i + 3] = d;
     }
 
+    printf("Testing N = %d\n", NEWHOPE_N);
+
     uint16_t res = test1(&r_gold, &r_test_dif, &origin_poly);
 
     /*********************poly_ntt test */
