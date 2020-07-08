@@ -77,7 +77,7 @@ void ntt_dif(uint16_t *a, const uint16_t *omega)
 void ntt_dit_copy(uint16_t *a, const uint16_t *omega)
 {
     uint16_t PairsInGroup = NEWHOPE_N / 2;
-
+    uint16_t count = 0;
     uint16_t Distance = 1;
     for (uint16_t NumOfGroups = 1; NumOfGroups < NEWHOPE_N; NumOfGroups = NumOfGroups * 2)
     {
@@ -91,14 +91,16 @@ void ntt_dit_copy(uint16_t *a, const uint16_t *omega)
             for (uint16_t j = k; j <= JLast; j += GapToNextPair)
             {
                 uint32_t temp = (W * a[j + Distance]) % NEWHOPE_Q;
-                a[j + Distance] = (a[j] + 2*NEWHOPE_Q - temp) % NEWHOPE_Q;
+                a[j + Distance] = (a[j] + NEWHOPE_Q - temp) % NEWHOPE_Q;
                 a[j] = (a[j] + temp) % NEWHOPE_Q;
+                count++;
             }
         }
         PairsInGroup = PairsInGroup / 2;
         Distance = Distance * 2;
         printf("-------------\n");
     }
+    printf("DIT count: %d\n", count);
 }
 
 
@@ -106,7 +108,7 @@ void ntt_dit_copy(uint16_t *a, const uint16_t *omega)
 void ntt_dif_copy(uint16_t *a, const uint16_t *omega)
 {
     uint16_t NumberOfProblems = 1;
-
+    uint16_t count = 0;
     uint16_t Distance = 1;
     for (uint16_t ProblemSize = NEWHOPE_N; ProblemSize > 1; ProblemSize = ProblemSize / 2)
     {
@@ -115,15 +117,17 @@ void ntt_dif_copy(uint16_t *a, const uint16_t *omega)
             uint16_t Jtwiddle = 0;
             for (uint16_t J = JFirst; J < NEWHOPE_N - 1; J += 2 * NumberOfProblems)
             {
-                uint16_t W = omega[Jtwiddle++] % NEWHOPE_Q;
+                uint32_t W = omega[Jtwiddle++];
                 uint16_t temp = a[J];
                 a[J] = (temp + a[J + Distance]) % NEWHOPE_Q;
-                a[J + Distance] = ( (((uint32_t)temp + 3 * NEWHOPE_Q - a[J + Distance])% NEWHOPE_Q) * W) % NEWHOPE_Q;
+                a[J + Distance] = montgomery_reduce( W*(temp + 3*NEWHOPE_Q - a[J + Distance]) );
+                count++;
             }
         }
         NumberOfProblems = NumberOfProblems * 2;
         Distance = Distance * 2;
     }
+    printf("DIF count: %d\n", count);
 }
 
 int compare(poly *r, poly *r_test, const char *string)
@@ -192,10 +196,14 @@ int main()
     for (uint16_t i = 0; i < NEWHOPE_N; i += 4)
     {
         // TODO: User rand() here
-        a = i;
+        a = i + 0;
         b = i + 1;
         c = i + 2;
         d = i + 3;
+        // a = rand() % NEWHOPE_Q;
+        // b = rand() % NEWHOPE_Q;
+        // c = rand() % NEWHOPE_Q;
+        // d = rand() % NEWHOPE_Q;
         r_gold.coeffs[i] = a;
         r_gold.coeffs[i + 1] = b;
         r_gold.coeffs[i + 2] = c;
@@ -227,6 +235,17 @@ int main()
 
     uint16_t res = compare(&r_gold, &r_test_dif, "NEWHOPE DIF vs MY DIF");
     
+    // Make sure NTT_DIF and NTT_DIF_COPY are the same 
+    mul_coefficients(r_test_dif_copy.coeffs, gammas_bitrev_montgomery);
+    ntt_dif_copy(r_test_dif_copy.coeffs, gammas_bitrev_montgomery);
+    full_reduce(&r_test_dif_copy);
+
+    res = compare(&r_test_dif_copy, &r_test_dif, "DIF vs DIF_copy");
+    
+    // Revert back to original value
+    for (uint16_t i = 0; i < NEWHOPE_N; i++){
+        r_test_dif_copy.coeffs[i] = r_test_dit_copy.coeffs[i];
+    }
     /************************************ Below are trash ************************/ 
     //TODO: Full reduction test
     
