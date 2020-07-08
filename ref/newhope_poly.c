@@ -1,5 +1,6 @@
 #include "newhope_ntt.h"
 #include "newhope_reduce.h"
+#include "newhope_poly.h"
 
 /*************************************************
 * Name:        poly_pointwise
