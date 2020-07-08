@@ -31,7 +31,7 @@ void ntt_dit(uint16_t *a, const uint16_t *omega)
             for (uint16_t j = k; j <= Jlast; j += GapToNextPair)
             {
                 uint16_t temp = montgomery_reduce((uint32_t)W * a[j + Distance]);
-                a[j + Distance] = (a[j] - temp) % NEWHOPE_Q;
+                a[j + Distance] = (a[j] + NEWHOPE_Q - temp) % NEWHOPE_Q;
                 a[j] = (a[j] + temp) % NEWHOPE_Q;
             }
         }
@@ -102,7 +102,7 @@ void ntt_dit_copy_full_reduction(uint16_t *a, const uint16_t *omega)
 }
 
 // Copy of NTT DIF RN BO->NO, with full reduction
-void ntt_dif_copy(uint16_t *a, const uint16_t *omega)
+void ntt_dif_full_reduction(uint16_t *a, const uint16_t *omega)
 {
     uint16_t NumberOfProblems = 1;
     uint16_t count = 0;
@@ -117,7 +117,7 @@ void ntt_dif_copy(uint16_t *a, const uint16_t *omega)
                 uint32_t W = omega[Jtwiddle++];
                 uint16_t temp = a[J];
                 a[J] = (temp + a[J + Distance]) % NEWHOPE_Q;
-                a[J + Distance] = montgomery_reduce(W * (temp + 3 * NEWHOPE_Q - a[J + Distance]));
+                a[J + Distance] = (((uint32_t)temp + 1 * NEWHOPE_Q - a[J + Distance]) * W) % NEWHOPE_Q;
                 count++;
             }
         }
@@ -291,6 +291,27 @@ int main()
     full_reduce(&r_test_dif);
 
     res = compare(&r_test_dif, &origin_poly, "ntt_dif + mul_coefficients test");
+    // YES
+
+    // Revert back to original value
+    for (uint16_t i = 0; i < NEWHOPE_N; i++)
+    {
+        r_test_dif.coeffs[i] = origin_poly.coeffs[i];
+    }
+
+    printf("======= Full reduction test ==============\n");
+    
+    scramble(&r_test_dif);
+    mul_coefficients_full_reduce(r_test_dif.coeffs, my_gammas_bitrev);
+    ntt_dif_full_reduction(r_test_dif.coeffs, my_gammas_bitrev);
+
+    scramble(&r_test_dif);
+    ntt_dif_full_reduction(r_test_dif.coeffs, my_omegas_inv_bitrev);
+    mul_coefficients_full_reduce(r_test_dif.coeffs, my_gammas_inv);
+    
+
+    res = compare(&r_test_dif, &origin_poly, "ntt_dif_full_reduction + mul_coefficients_full_reduce test");
+    // YES
 
     // Revert back to original value
     for (uint16_t i = 0; i < NEWHOPE_N; i++)
@@ -299,23 +320,9 @@ int main()
     }
 
     /************************************ Below are trash ************************/
-    printf("=====================\n");
-    //TODO: Full reduction test
 
-    scramble(&r_test_dit_copy);
-    mul_coefficients_full_reduce(r_test_dit_copy.coeffs, my_gammas_bitrev);
-    ntt_dit_copy_full_reduction(r_test_dit_copy.coeffs, my_omegas_bitrev);
-
-    scramble(&r_test_dit_copy);
-    ntt_dit_copy_full_reduction(r_test_dit_copy.coeffs, my_omegas_inv_bitrev);
-    mul_coefficients_full_reduce(r_test_dit_copy.coeffs, my_gammas_inv);
     
-    full_reduce(&r_test_dit_copy);
-
-    printArray(r_test_dit_copy.coeffs, NEWHOPE_N, "ntt_dit test");
-
-    res = compare(&r_test_dit_copy, &origin_poly, "ntt_dit + mul_coefficients test");
-
+    // printArray(r_test_dif.coeffs, NEWHOPE_N, "ntt_dit test");
     // ntt_dif_copy(r_test_dif_copy.coeffs, omega_bitrev_order, 8);
     // ntt_dif_copy(r_test_dif_copy.coeffs, gammas_bitrev_full_reduction);
 
