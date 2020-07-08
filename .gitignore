@@ -5,3 +5,4 @@ test_func/test_ntt
 test_func/test_ntt_wiki
 test_func/test_ntt_copy
 test_func/test_ntt_dit_dif
+*.json
