@@ -65,7 +65,7 @@ void ntt_dif(uint16_t *a, const uint16_t *omega)
 }
 
 // Copy of NTT DIT RN BO->NO, with full reduction
-void ntt_dit_copy_full_reduction(uint16_t *a, const uint16_t *omega)
+void ntt_dit_full_reduction(uint16_t *a, const uint16_t *omega)
 {
     uint16_t PairsInGroup = NEWHOPE_N / 2;
     uint16_t count = 0;
@@ -82,15 +82,8 @@ void ntt_dit_copy_full_reduction(uint16_t *a, const uint16_t *omega)
             for (uint16_t j = k; j <= JLast; j += GapToNextPair)
             {
                 uint32_t temp = (W * a[j + Distance]) % NEWHOPE_Q;
-                // uint32_t alter = W;
-                // alter = alter * a[j +Distance];
-                // alter = alter % NEWHOPE_Q;
-                // if (alter != temp)
-                // {
-                //     printf("[Error] Overflow %d-%d\n", alter, temp);
-                // }
-                a[j + Distance] = ((uint32_t)(a[j] - temp)) % NEWHOPE_Q;
-                a[j] = ((uint32_t)(a[j] + temp)) % NEWHOPE_Q;
+                a[j + Distance] = (a[j] + 1 * NEWHOPE_Q - temp) % NEWHOPE_Q;
+                a[j] = (a[j] + temp) % NEWHOPE_Q;
                 count++;
             }
         }
@@ -98,7 +91,7 @@ void ntt_dit_copy_full_reduction(uint16_t *a, const uint16_t *omega)
         Distance = Distance * 2;
         // printf("-------------\n");
     }
-    printf("DIT count: %d\n", count);
+    // printf("DIT count: %d\n", count);
 }
 
 // Copy of NTT DIF RN BO->NO, with full reduction
@@ -124,7 +117,7 @@ void ntt_dif_full_reduction(uint16_t *a, const uint16_t *omega)
         NumberOfProblems = NumberOfProblems * 2;
         Distance = Distance * 2;
     }
-    printf("DIF count: %d\n", count);
+    // printf("DIF count: %d\n", count);
 }
 
 void scramble(poly *a)
@@ -197,12 +190,17 @@ void mul_coefficients_full_reduce(uint16_t *r, uint16_t *a)
     }
 }
 
+void test1()
+{
+    ;
+}
+
 int main()
 {
     poly r_gold,
         r_test_dif,
+        r_test_dit,
         r_test_dif_copy,
-        r_test_dit_copy,
         origin_poly;
     uint16_t a, b, c, d;
     srand((unsigned int)&r_gold);
@@ -233,16 +231,17 @@ int main()
         r_test_dif_copy.coeffs[i + 2] = c;
         r_test_dif_copy.coeffs[i + 3] = d;
 
-        r_test_dit_copy.coeffs[i] = a;
-        r_test_dit_copy.coeffs[i + 1] = b;
-        r_test_dit_copy.coeffs[i + 2] = c;
-        r_test_dit_copy.coeffs[i + 3] = d;
+        r_test_dit.coeffs[i] = a;
+        r_test_dit.coeffs[i + 1] = b;
+        r_test_dit.coeffs[i + 2] = c;
+        r_test_dit.coeffs[i + 3] = d;
 
         origin_poly.coeffs[i] = a;
         origin_poly.coeffs[i + 1] = b;
         origin_poly.coeffs[i + 2] = c;
         origin_poly.coeffs[i + 3] = d;
     }
+
     mul_coefficients(r_gold.coeffs, gammas_bitrev_montgomery);
     ntt_copy(r_gold.coeffs, gammas_bitrev_montgomery);
     // NTT DIF: BO-> NO
@@ -300,7 +299,7 @@ int main()
     }
 
     printf("======= Full reduction test ==============\n");
-    
+
     scramble(&r_test_dif);
     mul_coefficients_full_reduce(r_test_dif.coeffs, my_gammas_bitrev);
     ntt_dif_full_reduction(r_test_dif.coeffs, my_gammas_bitrev);
@@ -308,7 +307,6 @@ int main()
     scramble(&r_test_dif);
     ntt_dif_full_reduction(r_test_dif.coeffs, my_omegas_inv_bitrev);
     mul_coefficients_full_reduce(r_test_dif.coeffs, my_gammas_inv);
-    
 
     res = compare(&r_test_dif, &origin_poly, "ntt_dif_full_reduction + mul_coefficients_full_reduce test");
     // YES
@@ -321,25 +319,25 @@ int main()
 
     /************************************ Below are trash ************************/
 
+    scramble(&r_test_dit);
+    mul_coefficients_full_reduce(r_test_dit.coeffs, my_gammas_bitrev);
+    ntt_dit_full_reduction(r_test_dit.coeffs, my_omegas);
+
+    scramble(&r_test_dit);
+    ntt_dit_full_reduction(r_test_dit.coeffs, my_omegas_inv);
+    mul_coefficients_full_reduce(r_test_dit.coeffs, my_gammas_inv);
+
+    // printArray(r_test_dif.coeffs, NEWHOPE_N, "ntt_dit_full_reduction test");
+
+    res = compare(&r_test_dit, &origin_poly, "ntt_dit_full_reduction + mul_coefficients_full_reduce test");
+
+    // Revert back to original value
+    for (uint16_t i = 0; i < NEWHOPE_N; i++)
+    {
+        r_test_dif.coeffs[i] = origin_poly.coeffs[i];
+    }
+
     
-    // printArray(r_test_dif.coeffs, NEWHOPE_N, "ntt_dit test");
-    // ntt_dif_copy(r_test_dif_copy.coeffs, omega_bitrev_order, 8);
-    // ntt_dif_copy(r_test_dif_copy.coeffs, gammas_bitrev_full_reduction);
-
-    // NTT DIT: BO-> NO
-    // ntt_dit_copy(r_test_dit_copy.coeffs, omega_natural_order);
-    // ntt_dit_copy(r_test_dit_copy.coeffs, bla, N);
-    // mul_coefficients(r_test_dit_copy.coeffs, dit_gammas);
-    // ntt_dit_copy_full_reduction(r_test_dit_copy.coeffs, dit_omegas);
-
-    // // full_reduce(&r_test_dit_copy);
-    // // full_reduce(&r_test_dif_copy);
-
-    // printArray(r_test_dif_copy.coeffs, NEWHOPE_N, "[GOLD]");
-    // printArray(r_test_dit_copy.coeffs, NEWHOPE_N, "[TEST]");
-
-    // res = compare(&r_test_dif_copy, &r_test_dit_copy, "my DIF vs my DIT");
-
     return res;
 }
 
