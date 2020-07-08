@@ -74,7 +74,7 @@ void ntt_dif(uint16_t *a, const uint16_t *omega)
 }
 
 // Copy of NTT DIT RN BO->NO, with full reduction
-void ntt_dit_copy(uint16_t *a, const uint16_t *omega)
+void ntt_dit_copy_full_reduction(uint16_t *a, const uint16_t *omega)
 {
     uint16_t PairsInGroup = NEWHOPE_N / 2;
     uint16_t count = 0;
@@ -91,14 +91,14 @@ void ntt_dit_copy(uint16_t *a, const uint16_t *omega)
             for (uint16_t j = k; j <= JLast; j += GapToNextPair)
             {
                 uint32_t temp = (W * a[j + Distance]) % NEWHOPE_Q;
-                a[j + Distance] = (a[j] + NEWHOPE_Q - temp) % NEWHOPE_Q;
+                a[j + Distance] = (a[j] - temp) % NEWHOPE_Q;
                 a[j] = (a[j] + temp) % NEWHOPE_Q;
                 count++;
             }
         }
         PairsInGroup = PairsInGroup / 2;
         Distance = Distance * 2;
-        printf("-------------\n");
+        // printf("-------------\n");
     }
     printf("DIT count: %d\n", count);
 }
@@ -121,6 +121,32 @@ void ntt_dif_copy(uint16_t *a, const uint16_t *omega)
                 uint16_t temp = a[J];
                 a[J] = (temp + a[J + Distance]) % NEWHOPE_Q;
                 a[J + Distance] = montgomery_reduce( W*(temp + 3*NEWHOPE_Q - a[J + Distance]) );
+                count++;
+            }
+        }
+        NumberOfProblems = NumberOfProblems * 2;
+        Distance = Distance * 2;
+    }
+    printf("DIF count: %d\n", count);
+}
+
+// Copy of NTT DIF RN BO->NO, with full reduction 
+void ntt_dif_copy_full_reduction(uint16_t *a, const uint16_t *omega)
+{
+    uint16_t NumberOfProblems = 1;
+    uint16_t count = 0;
+    uint16_t Distance = 1;
+    for (uint16_t ProblemSize = NEWHOPE_N; ProblemSize > 1; ProblemSize = ProblemSize / 2)
+    {
+        for (uint16_t JFirst = 0; JFirst < NumberOfProblems; JFirst++)
+        {
+            uint16_t Jtwiddle = 0;
+            for (uint16_t J = JFirst; J < NEWHOPE_N - 1; J += 2 * NumberOfProblems)
+            {
+                uint32_t W = omega[Jtwiddle++];
+                uint16_t temp = a[J];
+                a[J] = (temp + a[J + Distance]) % NEWHOPE_Q;
+                a[J + Distance] = ( W* ( (temp + NEWHOPE_Q - a[J + Distance]) % NEWHOPE_Q) ) % NEWHOPE_Q;
                 count++;
             }
         }
@@ -251,7 +277,7 @@ int main()
     
     // NTT DIF: BO-> NO
     mul_coefficients(r_test_dif_copy.coeffs, dif_gammas_bitrev);
-    ntt_dif_copy(r_test_dif_copy.coeffs, dif_omegas_bitrev);
+    ntt_dif_copy_full_reduction(r_test_dif_copy.coeffs, dif_omegas_bitrev);
     // ntt_dif_copy(r_test_dif_copy.coeffs, omega_bitrev_order, 8);
     // ntt_dif_copy(r_test_dif_copy.coeffs, gammas_bitrev_full_reduction);
     
@@ -259,7 +285,7 @@ int main()
     // ntt_dit_copy(r_test_dit_copy.coeffs, omega_natural_order);
     // ntt_dit_copy(r_test_dit_copy.coeffs, bla, N);
     mul_coefficients(r_test_dit_copy.coeffs, dif_gammas_bitrev);
-    ntt_dit_copy(r_test_dit_copy.coeffs, dif_omegas_bitrev);
+    ntt_dit_copy_full_reduction(r_test_dit_copy.coeffs, dif_omegas_bitrev);
 
     // full_reduce(&r_test_dit_copy);
     // full_reduce(&r_test_dif_copy);
