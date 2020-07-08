@@ -173,9 +173,10 @@ int main()
 
     res = test4(&r_test_dif, &origin_poly);
 
-    /************************************ Below are trash ************************/
+    // Important 
     res = test5(&r_test_dit, &origin_poly);
     
+    /************************************ Below are trash ************************/
     return res;
 }
 
