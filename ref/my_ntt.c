@@ -179,3 +179,57 @@ void mul_coefficients_full_reduce(uint16_t *r, uint16_t *a)
         r[i] = temp;
     }
 }
+
+
+void copy_poly(poly *a, poly *b)
+{
+    for (uint16_t i = 0; i < NEWHOPE_N; i++)
+    {
+        a->coeffs[i] = b->coeffs[i];
+    }
+}
+
+/**** From test6 ****/
+void my_poly_ntt_dif(poly *r)
+{
+    mul_coefficients(r->coeffs, gammas_bitrev_montgomery);
+    ntt_dif((uint16_t *)r->coeffs, gammas_bitrev_montgomery);
+}
+
+void my_poly_invntt_dif(poly *r)
+{
+  bitrev_vector(r->coeffs);
+  ntt_dif((uint16_t *)r->coeffs, omegas_inv_bitrev_montgomery);
+  mul_coefficients(r->coeffs, gammas_inv_montgomery);
+}
+/**** ********** ****/
+
+/**** From test7 ****/
+void my_poly_ntt_dif_full_reduction(poly *r)
+{
+    mul_coefficients_full_reduce(r->coeffs, my_gammas_bitrev);
+    ntt_dif_full_reduction((uint16_t *)r->coeffs, my_gammas_bitrev);
+}
+
+void my_poly_invntt_dif_full_reduction(poly *r)
+{
+  bitrev_vector(r->coeffs);
+  ntt_dif_full_reduction((uint16_t *)r->coeffs, my_omegas_inv_bitrev);
+  mul_coefficients_full_reduce(r->coeffs, my_gammas_inv);
+}
+/**** ********** ****/
+
+/**** From test8 ****/
+void my_poly_ntt_dit_full_reduction(poly *r)
+{
+    mul_coefficients_full_reduce(r->coeffs, my_gammas_bitrev);
+    ntt_dit((uint16_t *)r->coeffs, my_omegas);
+}
+
+void my_poly_invntt_dit_full_reduction(poly *r)
+{
+  bitrev_vector(r->coeffs);
+  ntt_dit((uint16_t *)r->coeffs, my_omegas_inv);
+  mul_coefficients(r->coeffs, my_gammas_inv);
+}
+/**** ********** ****/
