@@ -7,7 +7,7 @@
 // clang -o test_ntt_dit_dif ../ref/newhope_ntt.c ../ref/my_ntt.c ../ref/newhope_reduce.c ../ref/newhope_poly.c test_ntt_dit_dif.c -Wall -Wextra -Werror -g3 -O0
 
 /*
-Insanity check 
+Ssanity check 
 Test to see if my implementation of DIF give out the same output as reference implementation
 Status: PASS
 */
@@ -35,7 +35,7 @@ uint16_t test1(poly *r_gold, poly *r_test_dif, poly *origin_poly)
 }
 
 /*
-Insanity check
+Sanity check
 Test to see if reference implementation of Forward DIF and Inverse DIF back to original value
 Status: PASS
 */
@@ -292,11 +292,13 @@ uint16_t test8(poly *r_test_dit, poly *r_test_dif, poly *tmp, poly *origin_poly)
 
     copy_poly(&tmp_copy, tmp);
 
+    // DIT MUL
     my_poly_ntt_dit_full_reduction(r_test_dit);
     my_poly_ntt_dit_full_reduction(&tmp_copy);
     mul_coefficients_full_reduce(r_test_dit->coeffs, tmp_copy.coeffs);
     my_poly_invntt_dit_full_reduction(r_test_dit);
 
+    // DIF MUL
     my_poly_ntt_dif_full_reduction(r_test_dif);
     my_poly_ntt_dif_full_reduction(tmp);
     mul_coefficients_full_reduce(r_test_dif->coeffs, tmp->coeffs);
@@ -367,7 +369,6 @@ uint16_t test9(poly *r_test_dit, poly *r_test_dif, poly *origin_poly)
 Montgomery + Full reduction test 
 Test if ntt_dit can perform forward DIT and invese DIT back to original version
 Status: PASS
-Note: DIT order is NO-> BO, wtf 
 */
 uint16_t test10(poly *r_test_dit, poly *origin_poly)
 {
@@ -392,6 +393,47 @@ uint16_t test10(poly *r_test_dit, poly *origin_poly)
     return res;
 }
 
+/*
+Test Forward DIT/DIF and Inverse DIF/DIT to see if it's back to original version
+Status:
+*/
+uint16_t test11(poly *tmp, poly *origin_poly)
+{
+
+    scramble(tmp);
+    poly_ntt(tmp);
+    my_poly_invntt_dif(tmp);
+    full_reduce(tmp);
+
+    // printArray(tmp->coeffs, NEWHOPE_N, "poly_ntt-my_poly_invntt_dif array");
+    uint16_t res = compare(tmp, origin_poly, "poly_ntt-my_poly_invntt_dif array");
+
+    copy_poly(tmp, origin_poly);
+
+    scramble(tmp);
+    my_poly_ntt_dif(tmp);
+    poly_invntt(tmp);
+    full_reduce(tmp);
+
+    // printArray(tmp->coeffs, NEWHOPE_N, "my_poly_ntt_dif-poly_invntt array");
+    res = compare(tmp, origin_poly, "my_poly_ntt_dif-poly_invntt");
+
+    copy_poly(tmp, origin_poly);
+
+    // TODO: Debug this case
+    scramble(tmp);
+    my_poly_ntt_dit(tmp);
+    my_poly_invntt_dif(tmp);
+    full_reduce(tmp);
+
+    printArray(tmp->coeffs, NEWHOPE_N, "my_poly_ntt_dit-my_poly_invntt_dif array");
+    res = compare(tmp, origin_poly, "my_poly_ntt_dit-my_poly_invntt_dif test");
+
+    copy_poly(tmp, origin_poly);
+
+    return res;
+}
+
 int main()
 {
     poly r_gold,
@@ -409,10 +451,10 @@ int main()
         c = i + 2;
         d = i + 3;
 
-        a = rand() % NEWHOPE_Q;
-        b = rand() % NEWHOPE_Q;
-        c = rand() % NEWHOPE_Q;
-        d = rand() % NEWHOPE_Q;
+        // a = rand() % NEWHOPE_Q;
+        // b = rand() % NEWHOPE_Q;
+        // c = rand() % NEWHOPE_Q;
+        // d = rand() % NEWHOPE_Q;
 
         r_gold.coeffs[i] = a;
         r_gold.coeffs[i + 1] = b;
@@ -469,6 +511,8 @@ int main()
 
     // Important
     res = test10(&r_test_dit, &origin_poly);
+
+    res = test11(&tmp, &origin_poly);
 
     /************************************ Below are trash ************************/
     return res;
