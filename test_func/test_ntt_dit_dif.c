@@ -364,20 +364,29 @@ uint16_t test9(poly *r_test_dit, poly *r_test_dif, poly *origin_poly)
 }
 
 /*
-Montgomery 
+Montgomery + Full reduction test 
 Test if ntt_dit can perform forward DIT and invese DIT back to original version
+Status: PASS
+Note: DIT order is NO-> BO, wtf 
 */
 uint16_t test10(poly *r_test_dit, poly *origin_poly)
 {
     printf("TEST10\n");
-    // scramble(r_test_dit);
+    scramble(r_test_dit);
     my_poly_ntt_dit(r_test_dit);
     my_poly_invntt_dit(r_test_dit);
     full_reduce(r_test_dit);
-    scramble(r_test_dit);
 
-    printArray(r_test_dit->coeffs, NEWHOPE_N, "montgomery DIT");
+    // printArray(r_test_dit->coeffs, NEWHOPE_N, "montgomery DIT");
     uint16_t res = compare(r_test_dit, origin_poly, "my_poly_ntt_dit montgomery test");
+
+    copy_poly(r_test_dit, origin_poly);
+    
+    scramble(r_test_dit);
+    my_poly_ntt_dit_full_reduction(r_test_dit);
+    my_poly_invntt_dit_full_reduction(r_test_dit);
+    res = compare(r_test_dit, origin_poly, "my_poly_ntt_dit full reduction test");
+
     copy_poly(r_test_dit, origin_poly);
 
     return res;
@@ -400,10 +409,10 @@ int main()
         c = i + 2;
         d = i + 3;
 
-        // a = rand() % NEWHOPE_Q;
-        // b = rand() % NEWHOPE_Q;
-        // c = rand() % NEWHOPE_Q;
-        // d = rand() % NEWHOPE_Q;
+        a = rand() % NEWHOPE_Q;
+        b = rand() % NEWHOPE_Q;
+        c = rand() % NEWHOPE_Q;
+        d = rand() % NEWHOPE_Q;
 
         r_gold.coeffs[i] = a;
         r_gold.coeffs[i + 1] = b;
