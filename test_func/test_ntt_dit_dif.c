@@ -395,7 +395,7 @@ uint16_t test10(poly *r_test_dit, poly *origin_poly)
 
 /*
 Test Forward DIT/DIF and Inverse DIF/DIT to see if it's back to original version
-Status:
+Status: Failed
 */
 uint16_t test11(poly *tmp, poly *origin_poly)
 {
