@@ -6,7 +6,11 @@
 // Compile Flag:
 // clang -o test_ntt_dit_dif ../ref/newhope_ntt.c ../ref/my_ntt.c ../ref/newhope_reduce.c ../ref/newhope_poly.c test_ntt_dit_dif.c -Wall -Wextra -Werror -g3 -O0
 
-
+/*
+Insanity check 
+Test to see if my implementation of DIF give out the same output as reference implementation
+Status: PASS
+*/
 uint16_t test1(poly *r_gold, poly *r_test_dif, poly *origin_poly)
 {
     mul_coefficients(r_gold->coeffs, gammas_bitrev_montgomery);
@@ -29,6 +33,11 @@ uint16_t test1(poly *r_gold, poly *r_test_dif, poly *origin_poly)
     return res;
 }
 
+/*
+Insanity check
+Test to see if reference implementation of Forward DIF and Inverse DIF back to original value
+Status: PASS
+*/
 uint16_t test2(poly *r_test_dif, poly *origin_poly)
 {
     scramble(r_test_dif);
@@ -47,9 +56,14 @@ uint16_t test2(poly *r_test_dif, poly *origin_poly)
     return res;
 }
 
+/*
+Montgomery test
+Test to see if my implementation of Forward DIF and Inverse DIF back to original value
+Status: PASS
+*/
 uint16_t test3(poly *r_test_dif, poly *origin_poly)
 {
-        // NTT DIF: BO-> NO
+    // NTT DIF: BO-> NO
     // Forward NTT, input is stored in BO
     scramble(r_test_dif);
     mul_coefficients(r_test_dif->coeffs, gammas_bitrev_montgomery);
@@ -74,6 +88,11 @@ uint16_t test3(poly *r_test_dif, poly *origin_poly)
     return res;
 }
 
+/*
+Full reduction test
+Test to see if Forward DIF and Inverse DIF back to original value
+Status: PASS
+*/
 uint16_t test4(poly *r_test_dif, poly *origin_poly)
 {
 
@@ -85,6 +104,7 @@ uint16_t test4(poly *r_test_dif, poly *origin_poly)
     ntt_dif_full_reduction(r_test_dif->coeffs, my_omegas_inv_bitrev);
     mul_coefficients_full_reduce(r_test_dif->coeffs, my_gammas_inv);
 
+    // printArray(r_test_dif->coeffs, NEWHOPE_N, "ntt_DIF_full_reduction test");
     uint16_t res = compare(r_test_dif, origin_poly, "ntt_dif_full_reduction + mul_coefficients_full_reduce test");
     // YES
 
@@ -97,6 +117,11 @@ uint16_t test4(poly *r_test_dif, poly *origin_poly)
     return res;
 }
 
+/*
+Full reduction test
+Test to see if Forward DIT and Inverse DIT back to original value
+Status: PASS
+*/
 uint16_t test5(poly *r_test_dit, poly *origin_poly)
 {
     scramble(r_test_dit);
@@ -107,8 +132,7 @@ uint16_t test5(poly *r_test_dit, poly *origin_poly)
     ntt_dit_full_reduction(r_test_dit->coeffs, my_omegas_inv);
     mul_coefficients_full_reduce(r_test_dit->coeffs, my_gammas_inv);
 
-    // printArray(r_test_dif.coeffs, NEWHOPE_N, "ntt_dit_full_reduction test");
-
+    // printArray(r_test_dit->coeffs, NEWHOPE_N, "ntt_DIT_full_reduction test");
     uint16_t res = compare(r_test_dit, origin_poly, "ntt_dit_full_reduction + mul_coefficients_full_reduce test");
 
     // Revert back to original value
@@ -118,7 +142,143 @@ uint16_t test5(poly *r_test_dit, poly *origin_poly)
     }
 
     return res;
+}
 
+/*
+Test to see if multiplication in my DIF and reference DIF are correct
+Status: PASS
+*/
+uint16_t test6(poly *r_test_dif, poly *tmp, poly *origin_poly)
+{
+    poly dif_copy;
+
+    // Phase 1
+    scramble(r_test_dif);
+    scramble(tmp);
+
+    poly_ntt(r_test_dif);
+    poly_ntt(tmp);
+
+    mul_coefficients(r_test_dif->coeffs, tmp->coeffs);
+    poly_invntt(r_test_dif);
+    full_reduce(r_test_dif);
+
+    copy_poly(&dif_copy, r_test_dif);
+    
+    // printArray(dif_copy.coeffs, NEWHOPE_N, "poly_ntt");
+
+    // Phase 2
+    // Revert to original value
+    copy_poly(r_test_dif, origin_poly);
+    copy_poly(tmp, origin_poly);
+    // printArray(tmp->coeffs, NEWHOPE_N, "tmp after copy");
+
+    scramble(r_test_dif);
+    scramble(tmp);
+
+    my_poly_ntt_dif(r_test_dif);
+    my_poly_ntt_dif(tmp);
+    
+    mul_coefficients(r_test_dif->coeffs, tmp->coeffs);
+
+    my_poly_invntt_dif(r_test_dif);
+    full_reduce(r_test_dif);
+    
+    // printArray(r_test_dif->coeffs, NEWHOPE_N, "my_poly_ntt");
+    uint16_t res = compare(r_test_dif, &dif_copy, "my_poly_ntt+mul+my_invntt vs ref poly_ntt+mul+invntt");
+
+    // Revert back to original value
+    copy_poly(r_test_dif, origin_poly);
+    copy_poly(tmp, origin_poly);
+
+    return res;
+}
+
+/*
+Full reduction test
+Test to see if multiplication in my DIF and full reduce DIF are correct
+Status: Incorrect
+*/
+uint16_t test7(poly *r_test_dif, poly *tmp, poly *origin_poly)
+{
+    poly dif_copy;
+
+    // Phase 1
+    scramble(r_test_dif);
+    scramble(tmp);
+
+    my_poly_ntt_dif(r_test_dif);
+    my_poly_ntt_dif(tmp);
+
+    mul_coefficients(r_test_dif->coeffs, tmp->coeffs);
+    my_poly_invntt_dif(r_test_dif);
+    full_reduce(r_test_dif);
+
+    copy_poly(&dif_copy, r_test_dif);
+    
+    printArray(dif_copy.coeffs, NEWHOPE_N, "my_poly_ntt_dif");
+
+    // Phase 2
+    // Revert to original value
+    copy_poly(r_test_dif, origin_poly);
+    copy_poly(tmp, origin_poly);
+    // printArray(tmp->coeffs, NEWHOPE_N, "tmp after copy");
+
+    scramble(r_test_dif);
+    scramble(tmp);
+
+    my_poly_ntt_dif_full_reduction(r_test_dif);
+    my_poly_ntt_dif_full_reduction(tmp);
+    
+    mul_coefficients_full_reduce(r_test_dif->coeffs, tmp->coeffs);
+
+    my_poly_invntt_dif_full_reduction(r_test_dif);
+    
+    printArray(r_test_dif->coeffs, NEWHOPE_N, "my_poly_ntt_dif_full_reduction");
+
+    uint16_t res = compare(r_test_dif, &dif_copy, "my_poly* full reduction vs montgomery");
+
+    // Revert back to original value
+    copy_poly(r_test_dif, origin_poly);
+    copy_poly(tmp, origin_poly);
+
+    return res;
+}
+
+
+/*
+Full reduction test 
+Test to see if multiplication in DIT and DIF are correct
+Status: Incomplete 
+*/
+uint16_t test8(poly *r_test_dit, poly *r_test_dif, poly *tmp, poly *origin_poly)
+{
+    (void) tmp;
+    scramble(r_test_dit);
+    scramble(r_test_dif);
+    mul_coefficients_full_reduce(r_test_dit->coeffs, my_gammas_bitrev);
+    mul_coefficients_full_reduce(r_test_dif->coeffs, my_gammas_bitrev);
+    ntt_dit_full_reduction(r_test_dit->coeffs, my_omegas);
+    ntt_dif_full_reduction(r_test_dif->coeffs, my_gammas_bitrev);
+
+    mul_coefficients_full_reduce(r_test_dif->coeffs, origin_poly->coeffs);
+    mul_coefficients_full_reduce(r_test_dit->coeffs, origin_poly->coeffs);
+
+    ntt_dit_full_reduction(r_test_dit->coeffs, my_omegas_inv);
+    ntt_dif_full_reduction(r_test_dif->coeffs, my_omegas_inv_bitrev);
+    mul_coefficients_full_reduce(r_test_dit->coeffs, my_gammas_inv);
+    mul_coefficients_full_reduce(r_test_dif->coeffs, my_gammas_inv);
+
+    uint16_t res = compare(r_test_dit, r_test_dif, "MUL DIT vs MUL DIF");
+
+    // Revert back to original value
+    for (uint16_t i = 0; i < NEWHOPE_N; i++)
+    {
+        r_test_dit->coeffs[i] = origin_poly->coeffs[i];
+        r_test_dif->coeffs[i] = origin_poly->coeffs[i];
+    }
+
+    return res;
 }
 
 int main()
@@ -126,16 +286,22 @@ int main()
     poly r_gold,
         r_test_dif,
         r_test_dit,
-        origin_poly;
+        origin_poly, 
+        tmp;
     uint16_t a, b, c, d;
     srand((unsigned int)&r_gold);
 
     for (uint16_t i = 0; i < NEWHOPE_N; i += 4)
     {
-        a = rand() % NEWHOPE_Q;
-        b = rand() % NEWHOPE_Q;
-        c = rand() % NEWHOPE_Q;
-        d = rand() % NEWHOPE_Q;
+        a = i + 0;
+        b = i + 1;
+        c = i + 2;
+        d = i + 3;
+
+        // a = rand() % NEWHOPE_Q;
+        // b = rand() % NEWHOPE_Q;
+        // c = rand() % NEWHOPE_Q;
+        // d = rand() % NEWHOPE_Q;
 
         r_gold.coeffs[i] = a;
         r_gold.coeffs[i + 1] = b;
@@ -156,6 +322,11 @@ int main()
         origin_poly.coeffs[i + 1] = b;
         origin_poly.coeffs[i + 2] = c;
         origin_poly.coeffs[i + 3] = d;
+
+        tmp.coeffs[i]     = a;
+        tmp.coeffs[i + 1] = b;
+        tmp.coeffs[i + 2] = c;
+        tmp.coeffs[i + 3] = d;
     }
 
     printf("Testing N = %d\n", NEWHOPE_N);
@@ -163,9 +334,8 @@ int main()
     uint16_t res = test1(&r_gold, &r_test_dif, &origin_poly);
 
     /*********************poly_ntt test */
-    
-    res = test2(&r_test_dif, &origin_poly);
 
+    res = test2(&r_test_dif, &origin_poly);
 
     /********* ntt_dif + mul_coefficient test ************/
 
@@ -175,10 +345,13 @@ int main()
 
     res = test4(&r_test_dif, &origin_poly);
 
-    // Important 
+    // Important
     res = test5(&r_test_dit, &origin_poly);
-    
+
+    res = test6(&r_test_dif, &tmp, &origin_poly);
+
+    res = test7(&r_test_dif, &tmp, &origin_poly);
+
     /************************************ Below are trash ************************/
     return res;
 }
-
