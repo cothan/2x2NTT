@@ -7,6 +7,9 @@ extern uint16_t omegas_inv_bitrev_montgomery[];
 extern uint16_t gammas_bitrev_montgomery[];
 extern uint16_t gammas_inv_montgomery[];
 
+extern uint16_t my_omegas_montgomery[];
+extern uint16_t my_omegas_inv_montgomery[];
+
 extern uint16_t my_gammas_bitrev[];
 extern uint16_t my_gammas_inv[];
 
