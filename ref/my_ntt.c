@@ -145,7 +145,9 @@ int compare(poly *r, poly *r_test, const char *string)
         if (error)
         {
             printf("Result: Failed!\n");
-            exit(1);
+            printf("+++++++++++++++\n");
+            // exit(1);
+            return 1;
         }
     }
     printf("Result: Success!\n---------------------\n");
@@ -223,13 +225,28 @@ void my_poly_invntt_dif_full_reduction(poly *r)
 void my_poly_ntt_dit_full_reduction(poly *r)
 {
     mul_coefficients_full_reduce(r->coeffs, my_gammas_bitrev);
-    ntt_dit((uint16_t *)r->coeffs, my_omegas);
+    ntt_dit_full_reduction((uint16_t *)r->coeffs, my_omegas);
 }
 
 void my_poly_invntt_dit_full_reduction(poly *r)
 {
   bitrev_vector(r->coeffs);
-  ntt_dit((uint16_t *)r->coeffs, my_omegas_inv);
-  mul_coefficients(r->coeffs, my_gammas_inv);
+  ntt_dit_full_reduction((uint16_t *)r->coeffs, my_omegas_inv);
+  mul_coefficients_full_reduce(r->coeffs, my_gammas_inv);
+}
+/**** ********** ****/
+
+/**** From test10 ****/
+void my_poly_ntt_dit(poly *r)
+{
+    mul_coefficients(r->coeffs, gammas_bitrev_montgomery);
+    ntt_dit((uint16_t *)r->coeffs, gammas_bitrev_montgomery);
+}
+
+void my_poly_invntt_dit(poly *r)
+{
+  bitrev_vector(r->coeffs);
+  ntt_dit((uint16_t *)r->coeffs, omegas_inv_bitrev_montgomery);
+  mul_coefficients(r->coeffs, gammas_inv_montgomery);
 }
 /**** ********** ****/

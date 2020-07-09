@@ -27,5 +27,10 @@ void my_poly_invntt_dif(poly *r);
 void my_poly_invntt_dif_full_reduction(poly *r);
 void my_poly_ntt_dif_full_reduction(poly *r);
 
+void my_poly_ntt_dit_full_reduction(poly *r);
+void my_poly_invntt_dit_full_reduction(poly *r);
+
+void my_poly_ntt_dit(poly *r);
+void my_poly_invntt_dit(poly *r);
 
 #endif
