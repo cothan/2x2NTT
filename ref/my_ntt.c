@@ -20,7 +20,8 @@ void ntt_dit(uint16_t *a, const uint16_t *omega)
             for (uint16_t j = k; j <= Jlast; j += GapToNextPair)
             {
                 uint16_t temp = montgomery_reduce((uint32_t)W * a[j + Distance]);
-                a[j + Distance] = (a[j] + NEWHOPE_Q - temp) % NEWHOPE_Q;
+                // printf("DIT: %d - %d\n", j+Distance, j);
+                a[j + Distance] = (a[j] + 3*NEWHOPE_Q - temp) % NEWHOPE_Q;
                 a[j] = (a[j] + temp) % NEWHOPE_Q;
             }
         }
@@ -71,7 +72,7 @@ void ntt_dit_full_reduction(uint16_t *a, const uint16_t *omega)
             for (uint16_t j = k; j <= JLast; j += GapToNextPair)
             {
                 uint32_t temp = (W * a[j + Distance]) % NEWHOPE_Q;
-                a[j + Distance] = (a[j] + 1 * NEWHOPE_Q - temp) % NEWHOPE_Q;
+                a[j + Distance] = (a[j] + 3 * NEWHOPE_Q - temp) % NEWHOPE_Q;
                 a[j] = (a[j] + temp) % NEWHOPE_Q;
                 count++;
             }
@@ -99,7 +100,7 @@ void ntt_dif_full_reduction(uint16_t *a, const uint16_t *omega)
                 uint32_t W = omega[Jtwiddle++];
                 uint16_t temp = a[J];
                 a[J] = (temp + a[J + Distance]) % NEWHOPE_Q;
-                a[J + Distance] = (((uint32_t)temp + 1 * NEWHOPE_Q - a[J + Distance]) * W) % NEWHOPE_Q;
+                a[J + Distance] = (((uint32_t)temp + 3 * NEWHOPE_Q - a[J + Distance]) * W) % NEWHOPE_Q;
                 count++;
             }
         }
@@ -240,13 +241,13 @@ void my_poly_invntt_dit_full_reduction(poly *r)
 void my_poly_ntt_dit(poly *r)
 {
     mul_coefficients(r->coeffs, gammas_bitrev_montgomery);
-    ntt_dit((uint16_t *)r->coeffs, gammas_bitrev_montgomery);
+    ntt_dit((uint16_t *)r->coeffs, my_omegas_montgomery);
 }
 
 void my_poly_invntt_dit(poly *r)
 {
   bitrev_vector(r->coeffs);
-  ntt_dit((uint16_t *)r->coeffs, omegas_inv_bitrev_montgomery);
+  ntt_dit((uint16_t *)r->coeffs, my_omegas_inv_montgomery);
   mul_coefficients(r->coeffs, gammas_inv_montgomery);
 }
 /**** ********** ****/
