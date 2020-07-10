@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 test_func/test_ntt_mul
 test_func/.gdb_history
 test_func/log
@@ -7,6 +8,8 @@ test_func/test_ntt_copy
 test_func/test_ntt_dit_dif
 *.json
 
+=======
+>>>>>>> 90a2510993e14b1940fd979344168cc3f78e5b47
 # Prerequisites
 *.d
 

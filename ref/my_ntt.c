@@ -20,7 +20,7 @@ void ntt_dit(uint16_t *a, const uint16_t *omega)
             for (uint16_t j = k; j <= Jlast; j += GapToNextPair)
             {
                 uint16_t temp = montgomery_reduce(((uint32_t)W * a[j + Distance]));
-                // printf("DIT: %d - %d\n", j+Distance, j);
+                // printf("DIT: %d - %d | %d\n", j, j+Distance, jTwiddle);
                 a[j + Distance] = (a[j] + 3*NEWHOPE_Q - temp) % NEWHOPE_Q;
                 a[j] = (a[j] + temp) % NEWHOPE_Q;
             }
@@ -28,6 +28,11 @@ void ntt_dit(uint16_t *a, const uint16_t *omega)
         PairsInGroup = PairsInGroup / 2;
         Distance = Distance * 2;
     }
+}
+
+void ntt_dit_2x2(uint16_t *a, const uint16_t *omega)
+{
+
 }
 
 // NTT DIF RN BO->NO
