@@ -192,8 +192,8 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state, bo
                     printf("|%3d| %4d * ram1[%4d] (%4d)\n", b, D, idx2, ram1[idx2]);
                 }
 
-                B = montgomery_reduce(((uint32_t)B * ram1[idx1]));
-                D = montgomery_reduce(((uint32_t)D * ram1[idx2]));
+                B = montgomery_reduce(((uint32_t)B * ram1[idx1])) % NEWHOPE_Q;
+                D = montgomery_reduce(((uint32_t)D * ram1[idx2])) % NEWHOPE_Q;
                 B_save = B;
                 D_save = D;
 
@@ -418,19 +418,12 @@ void hls_poly_ntt_mul(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE 
     switch (state)
     {
     case PSIS:
-        hls_ntt(ram, ram1, ram2, PSIS, debug);
-        break;
     case IPSIS:
-        hls_ntt(ram, ram1, ram2, IPSIS, debug);
-        break;
     case MUL:
         hls_ntt(ram, ram1, ram2, MUL, debug);
         return;
 
     case INTT:
-        hls_ntt(ram, ram1, ram2, INTT, debug);
-        printf("[Error] Create new memory INTT\n");
-        return;
     case NTT:
         hls_ntt(ram, ram1, ram2, NTT, debug);
         printf("[Error] Create new memory\n");
