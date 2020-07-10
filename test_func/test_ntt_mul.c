@@ -15,14 +15,14 @@ int main()
     uint64_t hls_r[NEWHOPE_N / 4],
         hls_origin_ram[NEWHOPE_N / 4];
 
-    uint16_t a, b, c, d;
+    uint16_t a, b, c, d, res;
 
     for (uint16_t i = 0; i < NEWHOPE_N; i += 4)
     {
-        a = i + 0;
-        b = i + 1;
-        c = i + 2;
-        d = i + 3;
+        a = rand();
+        b = rand();
+        c = rand();
+        d = rand();
         r_gold.coeffs[i] = a;
         r_gold.coeffs[i + 1] = b;
         r_gold.coeffs[i + 2] = c;
@@ -37,22 +37,30 @@ int main()
         pack(a, b, c, d, hls_r, i / 4, false);
         pack(a, b, c, d, hls_origin_ram, i / 4, false);
     }
-    mul_coefficients(r_gold.coeffs, gammas_bitrev_montgomery);
-    hls_poly_ntt_mul(hls_r, hls_ram1_gammas_bitrev_montgomery, hls_ram2_gammas_bitrev_montgomery, PSIS, false);
 
-    uint16_t res = compare_poly_ram(&r_gold, hls_r, "Test HLS PSIS MUL");
+    for (uint16_t test=0; test< 100; test++)
+    {
+        mul_coefficients(r_gold.coeffs, gammas_bitrev_montgomery);
+        full_reduce(&r_gold);
+        hls_poly_ntt_mul(hls_r, hls_ram1_gammas_bitrev_montgomery, hls_ram2_gammas_bitrev_montgomery, PSIS, false);
 
-    // Revert back to original
-    copy_poly(&r_gold, &origin_poly);
-    // printArray(r_gold.coeffs, NEWHOPE_N, "r_gold");
+        res = compare_poly_ram(&r_gold, hls_r, "Test HLS PSIS MUL");
 
-    copy_ram(hls_r, hls_origin_ram);
+        // Revert back to original
+        copy_poly(&r_gold, &origin_poly);
+        copy_ram(hls_r, hls_origin_ram);
+        // printArray(r_gold.coeffs, NEWHOPE_N, "r_gold");
 
-    mul_coefficients(r_gold.coeffs, gammas_inv_montgomery);
-    full_reduce(&r_gold);
-    hls_poly_ntt_mul(hls_r, hls_ram1_gammas_inv_montgomery, hls_ram2_gammas_inv_montgomery, IPSIS, false);
 
-    res = compare_poly_ram(&r_gold, hls_r, "Test HLS IPSIS MUL");
+        mul_coefficients(r_gold.coeffs, gammas_inv_montgomery);
+        full_reduce(&r_gold);
+        hls_poly_ntt_mul(hls_r, hls_ram1_gammas_inv_montgomery, hls_ram2_gammas_inv_montgomery, IPSIS, false);
+
+        res = compare_poly_ram(&r_gold, hls_r, "Test HLS IPSIS MUL");
+        // Revert back to original
+        copy_poly(&r_gold, &origin_poly);
+        copy_ram(hls_r, hls_origin_ram);
+    }
 
     return res;
 }
