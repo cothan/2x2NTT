@@ -10,6 +10,14 @@
 #define NEWHOPE_Q 12289 
 #define NEWHOPE_K 8           /* used in noise sampling */
 
+#if (NEWHOPE_N == 512)
+#define NEWHOPE_LOGN 9
+#elif (NEWHOPE_N == 1024)
+#define NEWHOPE_LOGN 10
+#else
+#error "Either 512 or 1024"
+#endif
+
 // #define NEWHOPE_SYMBYTES 32   /* size of shared key, seeds/coins, and hashes */
 
 // #define NEWHOPE_POLYBYTES            ((14*NEWHOPE_N)/8)
