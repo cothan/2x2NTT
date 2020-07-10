@@ -1,51 +1,49 @@
 #include "../ref/newhope_ntt.h"
 #include "../hls/hls_ntt_mul.h"
+#include "../ref/my_ntt.h"
+#include "common/utils.c"
 
-int compare(poly *r, uint64_t *hls_r)
-{
-    uint16_t a[4];
-    uint16_t b[4];
-    bool error = false;
-    for (uint16_t i = 0; i < NEWHOPE_N; i += 4)
-    {
-        a[0] = r->coeffs[i];
-        a[1] = r->coeffs[i + 1];
-        a[2] = r->coeffs[i + 2];
-        a[3] = r->coeffs[i + 3];
 
-        unpack(hls_r, i / 4, &b[0], &b[1], &b[2], &b[3]);
-
-        for (uint16_t j = 0; j < 4; j++)
-        {
-            if (a[j] != b[j])
-            {
-                printf("[%u] %u != %u\n", i + j, a[j], b[j]);
-                error = true;
-            }
-        }
-        if (error)
-            return 1;
-    }
-    return 0;
-}
+// Compile flags
+// clang -o test_ntt  ../hls/hls_ntt_mul.c ../ref/newhope_precomp.c ../ref/newhope_ntt.c ../ref/newhope_reduce.c test_ntt.c -Wall -Wextra -Werror -g3 -O0
 
 int main()
 {
-    poly r_gold;
-    uint64_t hls_r[NEWHOPE_N / 4];
+    poly r_gold,
+        origin_poly;
+
+    uint64_t hls_r[NEWHOPE_N / 4],
+        hls_origin_ram[NEWHOPE_N / 4];
+
+    uint16_t a, b, c, d;
+
     for (uint16_t i = 0; i < NEWHOPE_N; i += 4)
     {
-        r_gold.coeffs[i] = i;
-        r_gold.coeffs[i + 1] = i + 1;
-        r_gold.coeffs[i + 2] = i + 2;
-        r_gold.coeffs[i + 3] = i + 3;
+        a = i + 0;
+        b = i + 1;
+        c = i + 2;
+        d = i + 3;
+        r_gold.coeffs[i] = a;
+        r_gold.coeffs[i + 1] = b;
+        r_gold.coeffs[i + 2] = c;
+        r_gold.coeffs[i + 3] = d;
 
-        pack(i, i + 1, i + 2, i + 3, hls_r, i / 4);
+        origin_poly.coeffs[i] = a;
+        origin_poly.coeffs[i + 1] = b;
+        origin_poly.coeffs[i + 2] = c;
+        origin_poly.coeffs[i + 3] = d;
+
+
+        pack(a, b, c, d, hls_r, i / 4, false);
+        pack(a, b, c, d, hls_origin_ram, i / 4, false);
     }
-    ntt(r_gold.coeffs, gammas_bitrev_montgomery);
-    hls_poly_ntt_mul(hls_r, NTT);
 
-    uint16_t res = compare(&r_gold, hls_r);
+    ntt_dit(r_gold.coeffs, gammas_bitrev_montgomery);
+    full_reduce(&r_gold);
+    // TODO: add omega forward ram1, ram2 
+    // hls_poly_ntt_mul(hls_r, , , MUL, true);
+
+    uint16_t res = compare_poly_ram(&r_gold, hls_r, "Forward NTT NTT_DIT vs HLS_NTT");
 
     return res;
 }
