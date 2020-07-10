@@ -53,20 +53,13 @@ void printSIPO(uint16_t *sipo, int length, char const *string)
     printf("]\n");
 }
 
-#if (NEWHOPE_N == 1024)
-#define NEWHOPE_LOGN 10
-#elif (NEWHOPE_N == 512)
-#define NEWHOPE_LOGN 9
-#else
-#error("Check NEWHOPE_N")
-#endif
 void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state, bool debug)
 {
     // Define Signal
     bool s = false,
          last_layer = false,
          enable_write = false;
-    uint16_t mem = 0;
+    uint16_t mem = 0; // Optimize for memory space for NTT/INTT
     // End Signal
 
     // Define SIPO
@@ -101,14 +94,12 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state, bo
 
     case NTT:
         s = true;
-        // TODO: change back to NEWHOPE_LOGN
-        layers = 2;
+        layers = NEWHOPE_LOGN;
         mem = 0;
         break;
     case INTT:
-        // TODO: change back to NEWHOPE_LOGN
         s = true;
-        layers = 2;
+        layers = NEWHOPE_LOGN;
         mem = 0;
         break;
     default:
