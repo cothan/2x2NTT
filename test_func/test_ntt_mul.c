@@ -1,51 +1,58 @@
 #include "../ref/newhope_ntt.h"
 #include "../hls/hls_ntt_mul.h"
+#include "../ref/my_ntt.h"
+#include "common/utils.c"
+// Compile flags
+// clang -o test_ntt_mul ../hls/hls_const.c ../hls/hls_ntt_mul.c ../ref/newhope_precomp.c ../ref/newhope_ntt.c ../ref/newhope_reduce.c ../ref/my_ntt.c test_ntt_mul.c -Wall -Wextra -Werror -g3 -O0
 
-int compare(poly *r, uint64_t *hls_r)
-{
-    uint16_t a[4];
-    uint16_t b[4];
-    bool error = false;
-    for (uint16_t i = 0; i < NEWHOPE_N; i += 4)
-    {
-        a[0] = r->coeffs[i];
-        a[1] = r->coeffs[i + 1];
-        a[2] = r->coeffs[i + 2];
-        a[3] = r->coeffs[i + 3];
-
-        unpack(hls_r, i / 4, &b[0], &b[1], &b[2], &b[3]);
-
-        for (uint16_t j = 0; j < 4; j++)
-        {
-            if (a[j] != b[j])
-            {
-                printf("[%u] %u != %u\n", i + j, a[j], b[j]);
-                error = true;
-            }
-        }
-        if (error)
-            return 1;
-    }
-    return 0;
-}
+// Status: PASSED
 
 int main()
 {
-    poly r_gold;
-    uint64_t hls_r[NEWHOPE_N / 4];
+    poly r_gold,
+        origin_poly;
+
+    uint64_t hls_r[NEWHOPE_N / 4],
+        hls_origin_ram[NEWHOPE_N / 4];
+
+    uint16_t a, b, c, d;
+
     for (uint16_t i = 0; i < NEWHOPE_N; i += 4)
     {
-        r_gold.coeffs[i] = i;
-        r_gold.coeffs[i + 1] = i + 1;
-        r_gold.coeffs[i + 2] = i + 2;
-        r_gold.coeffs[i + 3] = i + 3;
+        a = i + 0;
+        b = i + 1;
+        c = i + 2;
+        d = i + 3;
+        r_gold.coeffs[i] = a;
+        r_gold.coeffs[i + 1] = b;
+        r_gold.coeffs[i + 2] = c;
+        r_gold.coeffs[i + 3] = d;
 
-        pack(i, i + 1, i + 2, i + 3, hls_r, i / 4);
+        origin_poly.coeffs[i] = a;
+        origin_poly.coeffs[i + 1] = b;
+        origin_poly.coeffs[i + 2] = c;
+        origin_poly.coeffs[i + 3] = d;
+
+
+        pack(a, b, c, d, hls_r, i / 4, false);
+        pack(a, b, c, d, hls_origin_ram, i / 4, false);
     }
     mul_coefficients(r_gold.coeffs, gammas_bitrev_montgomery);
-    hls_poly_ntt_mul(hls_r, PSIS);
+    hls_poly_ntt_mul(hls_r, hls_ram1_gammas_bitrev_montgomery, hls_ram2_gammas_bitrev_montgomery, PSIS, false);
 
-    uint16_t res = compare(&r_gold, hls_r);
+    uint16_t res = compare_poly_ram(&r_gold, hls_r, "Test HLS PSIS MUL");
+
+    // Revert back to original
+    copy_poly(&r_gold, &origin_poly);
+    // printArray(r_gold.coeffs, NEWHOPE_N, "r_gold");
+
+    copy_ram(hls_r, hls_origin_ram);
+
+    mul_coefficients(r_gold.coeffs, gammas_inv_montgomery);
+    full_reduce(&r_gold);
+    hls_poly_ntt_mul(hls_r, hls_ram1_gammas_inv_montgomery, hls_ram2_gammas_inv_montgomery, IPSIS, false);
+
+    res = compare_poly_ram(&r_gold, hls_r, "Test HLS IPSIS MUL");
 
     return res;
 }
