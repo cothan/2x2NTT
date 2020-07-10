@@ -19,7 +19,7 @@ void ntt_dit(uint16_t *a, const uint16_t *omega)
             uint16_t W = omega[jTwiddle];
             for (uint16_t j = k; j <= Jlast; j += GapToNextPair)
             {
-                uint16_t temp = montgomery_reduce((uint32_t)W * a[j + Distance]);
+                uint16_t temp = montgomery_reduce(((uint32_t)W * a[j + Distance]));
                 // printf("DIT: %d - %d\n", j+Distance, j);
                 a[j + Distance] = (a[j] + 3*NEWHOPE_Q - temp) % NEWHOPE_Q;
                 a[j] = (a[j] + temp) % NEWHOPE_Q;
@@ -46,7 +46,7 @@ void ntt_dif(uint16_t *a, const uint16_t *omega)
                 uint16_t W = omega[Jtwiddle++];
                 uint16_t temp = a[J];
                 a[J] = (temp + a[J + Distance]) % NEWHOPE_Q;
-                a[J + Distance] = montgomery_reduce(((uint32_t)temp + 3 * NEWHOPE_Q - a[J + Distance]) * W);
+                a[J + Distance] = montgomery_reduce((((uint32_t)temp + 3 * NEWHOPE_Q - a[J + Distance]) * W));
             }
         }
         NumberOfProblems = NumberOfProblems * 2;
@@ -155,6 +155,9 @@ int compare(poly *r, poly *r_test, const char *string)
     return 0;
 }
 
+
+
+
 void printArray(uint16_t *sipo, int length, char const *string)
 {
     printf("%s: [", string);
@@ -191,6 +194,16 @@ void copy_poly(poly *a, poly *b)
         a->coeffs[i] = b->coeffs[i];
     }
 }
+
+void copy_ram(uint64_t *ram, uint64_t *origin_ram)
+{
+    for (uint16_t i = 0; i < NEWHOPE_N/4; i++)
+    {
+        ram[i] = origin_ram[i];
+    }
+}
+
+
 
 /**** From test6 ****/
 void my_poly_ntt_dif(poly *r)
