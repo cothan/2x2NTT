@@ -32,7 +32,8 @@ void ntt_dit(uint16_t *a, const uint16_t *omega)
 
 void ntt_dit_2x2(uint16_t *a, const uint16_t *omega)
 {
-
+    (void) omega;
+    (void) a;
 }
 
 // NTT DIF RN BO->NO
@@ -178,6 +179,14 @@ void full_reduce(poly *a)
     for (uint16_t i = 0; i < NEWHOPE_N; i++)
     {
         a->coeffs[i] = a->coeffs[i] % NEWHOPE_Q;
+    }
+}
+
+void full_reduce_from_montgomery(poly *a)
+{
+    for (uint16_t i = 0; i < NEWHOPE_N; i++)
+    {
+        a->coeffs[i] = montgomery_reduce(a->coeffs[i]) % NEWHOPE_N;
     }
 }
 

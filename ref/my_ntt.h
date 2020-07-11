@@ -14,6 +14,7 @@ void ntt_dif_full_reduction(uint16_t *a, const uint16_t *omega);
 
 void scramble(poly *a);
 void full_reduce(poly *a);
+void full_reduce_from_montgomery(poly *a);
 void mul_coefficients_full_reduce(uint16_t *r, uint16_t *a);
 
 int compare(poly *r, poly *r_test, const char *string);
