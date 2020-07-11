@@ -479,6 +479,7 @@ if __name__ == "__main__":
     data_b = copy.copy(data_a)
     data_c = copy.copy(data_a)
     data_d = copy.copy(data_a)
+    origin_a = copy.copy(data_a)
 
     ntt_b = iterative_ntt_ches(data_b)
     ntt_c, _ = iterative_ntt_2x2_ches(data_c)
@@ -493,6 +494,5 @@ if __name__ == "__main__":
 
     print("PASSED: iterative_ntt == iterative_ntt_2x2")
 
-    assert ntt_a == ntt_b == ntt_c == ntt_d
-
+    assert ntt_a == ntt_b == ntt_c == ntt_d != origin_a
     print("PASSED: iterative_ntt_ches == iterative_ntt_2x2_ches == iterative_ntt == iterative_ntt_2x2")
