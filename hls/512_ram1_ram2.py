@@ -175,6 +175,9 @@ def compare(a, b):
 my_omegas = gen_omegas(ntr, inverse_omega=False, montgomery=False)
 my_omegas_inv = gen_omegas(ntr, inverse_omega=True, montgomery=False)
 
+my_omegas_montgomery = gen_omegas(ntr, inverse_omega=False, montgomery=True)
+my_omegas_inv_montgomery = gen_omegas(ntr, inverse_omega=True, montgomery=True)
+
 my_omegas_bitrev = gen_omegas(brv, inverse_omega=False, montgomery=False)
 my_omegas_inv_bitrev = gen_omegas(brv, inverse_omega=True, montgomery=False)
 
@@ -189,11 +192,15 @@ my_gammas_inv = gen_gammas(ntr, inverse_gamma=True, montgomery=False)
 
 def print_big_ram():
     print ("""#include "inttypes.h"
-#include "../ref/newhope_params.h"
+#include "newhope_ntt.h"
+#include "newhope_params.h"
 """)
     print("#if (NEWHOPE_N == 512)")
     print("uin16_t my_omegas[{}] = {};".format(n//2, my_omegas))
     print("uint16_t my_omegas_inv[{}] = {};".format(n//2, my_omegas_inv))
+    print()
+    print("uin16_t my_omegas_montgomery[{}] = {};".format(n//2, my_omegas_montgomery))
+    print("uint16_t my_omegas_inv_montgomery[{}] = {};".format(n//2, my_omegas_inv_montgomery))
     print()
     print("uint16_t my_omegas_bitrev[{}] = {};".format(n//2, my_omegas_bitrev))
     print("uint16_t my_omegas_inv_bitrev[{}] = {};".format(n//2, my_omegas_inv_bitrev))

@@ -41,63 +41,6 @@ brv = [0,512,256,768,128,640,384,896,64,576,320,832,192,704,448,960,32,544,288,8
        15,527,271,783,143,655,399,911,79,591,335,847,207,719,463,975,47,559,303,815,175,687,431,943,111,623,367,879,239,751,495,1007,
        31,543,287,799,159,671,415,927,95,607,351,863,223,735,479,991,63,575,319,831,191,703,447,959,127,639,383,895,255,767,511,1023]
 
-def gen_omegas(table, inverse_omega=False, montgomery=False):
-    res = []
-    for i in range(0, n, 2):
-        t = table[i]
-        if inverse_omega:
-            t = -t
-        t = pow(g, 2*t, q)
-        if montgomery:
-            t *= mont
-        t = t % q 
-        res.append(t)
-    res = map(int, res)
-    res = list(res)
-    return res 
-
-def gen_gammas(table, inverse_gamma=False, montgomery=False):
-    res = [] 
-    for i in range(n):
-        p = table[i]
-        if inverse_gamma:
-            p = -p
-        t = pow(g, p, q)
-        if inverse_gamma:
-            # Multiply with inverse of n
-            t *= n_inv
-        if montgomery:
-            t *= mont
-        t = t % q 
-        res.append(t)
-    res = map(int, res)
-    res = list(res)
-    return res
-
-def compare(a, b):
-    assert len(a) == len(b)
-    for i in range(len(a)):
-        if a[i] != b[i]:
-            print("{}: {} != {}".format(i, a[i], b[i]))
-            return False
-    return True
-
-my_omegas = gen_omegas(ntr, inverse_omega=False, montgomery=False)
-my_omegas_inv = gen_omegas(ntr, inverse_omega=True, montgomery=False)
-
-my_omegas_bitrev = gen_omegas(brv, inverse_omega=False, montgomery=False)
-my_omegas_inv_bitrev = gen_omegas(brv, inverse_omega=True, montgomery=False)
-
-my_omegas_bitrev_montgomery = gen_omegas(brv, inverse_omega=False, montgomery=True)
-my_omegas_inv_bitrev_montgomery = gen_omegas(brv, inverse_omega=True, montgomery=True)
-
-my_gammas_bitrev_montgomery = gen_gammas(brv, inverse_gamma=False, montgomery=True)
-my_gammas_inv_montgomery = gen_gammas(ntr, inverse_gamma=True, montgomery=True)
-
-my_gammas_bitrev  = gen_gammas(brv, inverse_gamma=False, montgomery=False)
-my_gammas_inv = gen_gammas(ntr, inverse_gamma=True, montgomery=False)
-
-
 newhope_omegas_inv_bitrev_montgomery=[
       4075,5315,4324,4916,10120,11767,7210,9027,10316,6715,1278,9945,3514,11248,11271,5925,
   147,8500,7840,6833,5537,4749,4467,7500,11099,9606,6171,8471,8429,5445,11239,7753,
@@ -267,10 +210,73 @@ newhope_gammas_inv_montgomery = [
   8497,4725,675,1852,10798,12076,10503,3256,9243,3076,2195,10847,12083,10504,12034,10497
 ]
 
+def gen_omegas(table, inverse_omega=False, montgomery=False):
+    res = []
+    for i in range(0, n, 2):
+        t = table[i]
+        if inverse_omega:
+            t = -t
+        t = pow(g, 2*t, q)
+        if montgomery:
+            t *= mont
+        t = t % q 
+        res.append(t)
+    res = map(int, res)
+    res = list(res)
+    return res 
+
+def gen_gammas(table, inverse_gamma=False, montgomery=False):
+    res = [] 
+    for i in range(n):
+        p = table[i]
+        if inverse_gamma:
+            p = -p
+        t = pow(g, p, q)
+        if inverse_gamma:
+            # Multiply with inverse of n
+            t *= n_inv
+        if montgomery:
+            t *= mont
+        t = t % q 
+        res.append(t)
+    res = map(int, res)
+    res = list(res)
+    return res
+
+def compare(a, b):
+    assert len(a) == len(b)
+    for i in range(len(a)):
+        if a[i] != b[i]:
+            print("{}: {} != {}".format(i, a[i], b[i]))
+            return False
+    return True
+
+my_omegas = gen_omegas(ntr, inverse_omega=False, montgomery=False)
+my_omegas_inv = gen_omegas(ntr, inverse_omega=True, montgomery=False)
+
+my_omegas_montgomery = gen_omegas(ntr, inverse_omega=False, montgomery=True)
+my_omegas_inv_montgomery = gen_omegas(ntr, inverse_omega=True, montgomery=True)
+
+my_omegas_bitrev = gen_omegas(brv, inverse_omega=False, montgomery=False)
+my_omegas_inv_bitrev = gen_omegas(brv, inverse_omega=True, montgomery=False)
+
+my_omegas_bitrev_montgomery = gen_omegas(brv, inverse_omega=False, montgomery=True)
+my_omegas_inv_bitrev_montgomery = gen_omegas(brv, inverse_omega=True, montgomery=True)
+
+my_gammas_bitrev_montgomery = gen_gammas(brv, inverse_gamma=False, montgomery=True)
+my_gammas_inv_montgomery = gen_gammas(ntr, inverse_gamma=True, montgomery=True)
+
+my_gammas_bitrev  = gen_gammas(brv, inverse_gamma=False, montgomery=False)
+my_gammas_inv = gen_gammas(ntr, inverse_gamma=True, montgomery=False)
+
+
 def print_big_ram():
     print("#elif (NEWHOPE_N == 1024)")
     print("uin16_t my_omegas[{}] = {};".format(n//2, my_omegas))
     print("uint16_t my_omegas_inv[{}] = {};".format(n//2, my_omegas_inv))
+    print()
+    print("uin16_t my_omegas_montgomery[{}] = {};".format(n//2, my_omegas_montgomery))
+    print("uint16_t my_omegas_inv_montgomery[{}] = {};".format(n//2, my_omegas_inv_montgomery))
     print()
     print("uint16_t my_omegas_bitrev[{}] = {};".format(n//2, my_omegas_bitrev))
     print("uint16_t my_omegas_inv_bitrev[{}] = {};".format(n//2, my_omegas_inv_bitrev))
