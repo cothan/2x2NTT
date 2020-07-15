@@ -186,7 +186,11 @@ void full_reduce_from_montgomery(poly *a)
 {
     for (uint16_t i = 0; i < NEWHOPE_N; i++)
     {
-        a->coeffs[i] = montgomery_reduce(a->coeffs[i]) % NEWHOPE_N;
+        a->coeffs[i] = montgomery_reduce(a->coeffs[i]);
+        if (a->coeffs[i] > NEWHOPE_Q)
+        {
+            printf("Need full reduce? %d:%d\n", i, a->coeffs[i]);
+        }
     }
 }
 
@@ -222,15 +226,15 @@ void copy_ram(uint64_t *ram, uint64_t *origin_ram)
 /**** From test6 ****/
 void my_poly_ntt_dif(poly *r)
 {
-    mul_coefficients(r->coeffs, gammas_bitrev_montgomery);
-    ntt_dif((uint16_t *)r->coeffs, gammas_bitrev_montgomery);
+    mul_coefficients(r->coeffs, my_gammas_bitrev_montgomery);
+    ntt_dif((uint16_t *)r->coeffs, my_omegas_bitrev_montgomery);
 }
 
 void my_poly_invntt_dif(poly *r)
 {
   bitrev_vector(r->coeffs);
-  ntt_dif((uint16_t *)r->coeffs, omegas_inv_bitrev_montgomery);
-  mul_coefficients(r->coeffs, gammas_inv_montgomery);
+  ntt_dif((uint16_t *)r->coeffs, my_omegas_inv_bitrev_montgomery);
+  mul_coefficients(r->coeffs, my_gammas_inv_montgomery);
 }
 /**** ********** ****/
 
@@ -238,7 +242,7 @@ void my_poly_invntt_dif(poly *r)
 void my_poly_ntt_dif_full_reduction(poly *r)
 {
     mul_coefficients_full_reduce(r->coeffs, my_gammas_bitrev);
-    ntt_dif_full_reduction((uint16_t *)r->coeffs, my_gammas_bitrev);
+    ntt_dif_full_reduction((uint16_t *)r->coeffs, my_omegas_bitrev);
 }
 
 void my_poly_invntt_dif_full_reduction(poly *r)
@@ -252,7 +256,7 @@ void my_poly_invntt_dif_full_reduction(poly *r)
 /**** From test10 ****/
 void my_poly_ntt_dit(poly *r)
 {
-    mul_coefficients(r->coeffs, gammas_bitrev_montgomery);
+    mul_coefficients(r->coeffs, my_gammas_bitrev_montgomery);
     ntt_dit((uint16_t *)r->coeffs, my_omegas_montgomery);
 }
 
@@ -260,7 +264,7 @@ void my_poly_invntt_dit(poly *r)
 {
   bitrev_vector(r->coeffs);
   ntt_dit((uint16_t *)r->coeffs, my_omegas_inv_montgomery);
-  mul_coefficients(r->coeffs, gammas_inv_montgomery);
+  mul_coefficients(r->coeffs, my_gammas_inv_montgomery);
 }
 /**** ********** ****/
 
