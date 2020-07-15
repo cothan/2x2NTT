@@ -189,9 +189,9 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state, bo
                 D_save = D;
 
                 A_hat = (A + B) % NEWHOPE_Q;
-                B_hat = (A + 3 * NEWHOPE_Q - B) % NEWHOPE_Q;
+                B_hat = (A + NEWHOPE_Q - B) % NEWHOPE_Q;
                 C_hat = (C + D) % NEWHOPE_Q;
-                D_hat = (C + 3 * NEWHOPE_Q - D) % NEWHOPE_Q;
+                D_hat = (C + NEWHOPE_Q - D) % NEWHOPE_Q;
 
                 // Middle
                 // Style A | A^ | A'
@@ -230,9 +230,9 @@ void hls_ntt(uint64_t *ram, uint16_t *ram1, uint16_t *ram2, enum STATE state, bo
                 D_prime = montgomery_reduce(((uint32_t)D_prime * ram2[idx4]));
 
                 A_prime = (A_prime + B_prime) % NEWHOPE_Q;
-                B_prime = (A_prime + 3 * NEWHOPE_Q - B_prime) % NEWHOPE_Q;
+                B_prime = (A_prime + NEWHOPE_Q - B_prime) % NEWHOPE_Q;
                 C_prime = (C_prime + D_prime) % NEWHOPE_Q;
-                D_prime = (C_prime + 3 * NEWHOPE_Q - D_prime) % NEWHOPE_Q;
+                D_prime = (C_prime + NEWHOPE_Q - D_prime) % NEWHOPE_Q;
 
                 // A_prime = A_prime;
                 // C_prime = C_prime;
