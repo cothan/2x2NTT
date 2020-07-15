@@ -8,8 +8,8 @@ extern uint16_t my_omegas[];
 extern uint16_t my_omegas_inv[];
 
 // DIT Montgomery 
-uint16_t my_omegas_montgomery[];
-uint16_t my_omegas_inv_montgomery[];
+extern uint16_t my_omegas_montgomery[];
+extern uint16_t my_omegas_inv_montgomery[];
 
 // DIF Full reduce
 extern uint16_t my_omegas_bitrev[];
