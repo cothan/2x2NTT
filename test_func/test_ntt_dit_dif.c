@@ -7,9 +7,8 @@
 // clang -o test_ntt_dit_dif ../ref/newhope_ntt.c ../ref/my_ntt.c ../ref/newhope_reduce.c ../ref/newhope_poly.c test_ntt_dit_dif.c -Wall -Wextra -Werror -g3 -O0
 
 /*
-Ssanity check 
-Test to see if my implementation of DIF give out the same output as reference implementation
-Status: PASS
+Sanity check 
+T1: Montgomery - Test to see if my implementation of DIF give out the same output as reference implementation  - PASSED
 */
 uint16_t test1(poly *r_gold, poly *r_test_dif, poly *origin_poly)
 {
@@ -36,8 +35,7 @@ uint16_t test1(poly *r_gold, poly *r_test_dif, poly *origin_poly)
 
 /*
 Sanity check
-Test to see if reference implementation of Forward DIF and Inverse DIF back to original value
-Status: PASS
+T2: Montgomery - Test to see if reference implementation of Forward DIF and Inverse DIF back to original value - PASSED
 */
 uint16_t test2(poly *r_test_dif, poly *origin_poly)
 {
@@ -59,9 +57,7 @@ uint16_t test2(poly *r_test_dif, poly *origin_poly)
 }
 
 /*
-Montgomery test
-Test to see if my implementation of Forward DIF and Inverse DIF back to original value
-Status: PASS
+T3: Montgomery - Test to see if my implementation of Forward DIF and Inverse DIF back to original value - PASSED
 */
 uint16_t test3(poly *r_test_dif, poly *origin_poly)
 {
@@ -101,9 +97,7 @@ uint16_t test3(poly *r_test_dif, poly *origin_poly)
 }
 
 /*
-Full reduction test
-Test to see if Forward DIF and Inverse DIF back to original value
-Status: PASS
+T4: Full reduction test - Test to see if Forward DIF and Inverse DIF back to original value - PASSED
 */
 uint16_t test4(poly *r_test_dif, poly *origin_poly)
 {
@@ -137,9 +131,7 @@ uint16_t test4(poly *r_test_dif, poly *origin_poly)
 }
 
 /*
-Full reduction test
-Test to see if Forward DIT and Inverse DIT back to original value
-Status: PASS
+T5: Full reduction test - Test to see if Forward DIT and Inverse DIT back to original value - PASSED
 */
 uint16_t test5(poly *r_test_dit, poly *origin_poly)
 {
@@ -173,8 +165,7 @@ uint16_t test5(poly *r_test_dit, poly *origin_poly)
 }
 
 /*
-Test to see if multiplication in my DIF and reference DIF are correct
-Status: PASS
+T6: Montgomery - Test to see if multiplication in my DIF and reference DIF are correct - PASSED
 */
 uint16_t test6(poly *r_test_dif, poly *tmp, poly *origin_poly)
 {
@@ -224,9 +215,7 @@ uint16_t test6(poly *r_test_dif, poly *tmp, poly *origin_poly)
 }
 
 /*
-Full reduction test
-Test to see if multiplication in my DIF and full reduce DIF are correct
-Status: Incorrect
+T7: Full reduction vs Montgomery test  - Test to see if multiplication in my DIF and full reduce DIF are correct - FAILED
 */
 uint16_t test7(poly *r_test_dif, poly *tmp, poly *origin_poly)
 {
@@ -242,11 +231,11 @@ uint16_t test7(poly *r_test_dif, poly *tmp, poly *origin_poly)
 
     mul_coefficients(r_test_dif->coeffs, tmp->coeffs);
     my_poly_invntt_dif(r_test_dif);
-    full_reduce(r_test_dif);
+    full_reduce_from_montgomery(r_test_dif);
 
     copy_poly(&dif_copy, r_test_dif);
     
-    // printArray(dif_copy.coeffs, NEWHOPE_N, "my_poly_ntt_dif");
+    printArray(dif_copy.coeffs, NEWHOPE_N, "my_poly_ntt_dif");
 
     // Phase 2
     // Revert to original value
@@ -277,9 +266,7 @@ uint16_t test7(poly *r_test_dif, poly *tmp, poly *origin_poly)
 
 
 /*
-Full reduction test 
-Test to see if multiplication in DIT and DIF are correct
-Status: Incorrect
+T8: Full reduction test - Test to see if multiplication in DIT and DIF are correct - FAILED
 */
 uint16_t test8(poly *r_test_dit, poly *r_test_dif, poly *tmp, poly *origin_poly)
 {
@@ -315,8 +302,8 @@ uint16_t test8(poly *r_test_dit, poly *r_test_dif, poly *tmp, poly *origin_poly)
 }
 
 /*
-Sanity check when all input are 0, and 1 and fix random number
-Status: PASS
+Sanity check 
+T9: Sanity check when all input are 0, and 1 and fix random number between DIT and DIF - PASSED
 */
 uint16_t test9(poly *r_test_dit, poly *r_test_dif, poly *origin_poly)
 {
@@ -366,9 +353,7 @@ uint16_t test9(poly *r_test_dit, poly *r_test_dif, poly *origin_poly)
 }
 
 /*
-Montgomery + Full reduction test 
-Test if ntt_dit can perform forward DIT and invese DIT back to original version
-Status: PASS
+T10:  T3 + T4 (for DIT) Test if ntt_dit can perform forward DIT and inverse DIT back to original version - PASSED
 */
 uint16_t test10(poly *r_test_dit, poly *origin_poly)
 {
@@ -394,8 +379,7 @@ uint16_t test10(poly *r_test_dit, poly *origin_poly)
 }
 
 /*
-Test Forward DIT/DIF and Inverse DIF/DIT to see if it's back to original version
-Status: Failed
+T11: Test Forward DIT/DIF and Inverse DIF/DIT to see if it's back to original version - FAILED
 */
 uint16_t test11(poly *tmp, poly *origin_poly)
 {
