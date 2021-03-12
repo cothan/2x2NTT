@@ -14,7 +14,7 @@
 
 #define LOG_N  8 // N= 256, => log(N) = 8
 
-enum OP {NTT_MODE, MUL_MODE, DECODE_TRUE, DECODE_FALSE};
+// enum OP {NTT_MODE, MUL_MODE, DECODE_TRUE, DECODE_FALSE};
 
 typedef struct
 {
@@ -266,16 +266,18 @@ void ntt2x2(bram *ram, int mode, int decode)
                 i3 = (N >> s) - 1;
                 i4 = i3;
             }
-            else{
-                // MUL mode 
-                i1 = m_counter++;
-                i2 = m_counter++;
-                i3 = m_counter++;
-                i4 = m_counter++;
-            }
+            
 
             for (int k = 0; k < N; k += m2)
             {
+                if (mode == MUL_MODE){
+                    // MUL mode 
+                    i1 = m_counter++;
+                    i2 = m_counter++;
+                    i3 = m_counter++;
+                    i4 = m_counter++;
+                }
+
                 int addr = (k + (j << 2))/4; 
                 if (decode == DECODE_TRUE)
                 {
@@ -315,6 +317,8 @@ void ntt2x2(bram *ram, int mode, int decode)
                     printf("%d %d | %d\n", a, b, i1);
                     printf("%d %d | %d\n", c, d, i2);
                 } */
+                save_a = a; 
+                save_c = c;
 
                 inverse_butterfly(mode, &a, &b, w1, a, b);
                 inverse_butterfly(mode, &c, &d, w2, c, d);
@@ -378,38 +382,48 @@ void ntt2x2(bram *ram, int mode, int decode)
 
                 if (write)
                 {
-                    // Serial in Parallel out
-                    switch (count & 0b11)
+                    if (mode == NTT_MODE)
                     {
-                    case 0:
-                        fa = fifo_a[DEPT_A - 1];
-                        fb = fifo_a[DEPT_A - 2];
-                        fc = fifo_a[DEPT_A - 3];
-                        fd = fifo_a[DEPT_A - 4];
-                        break;
+                        // Serial in Parallel out
+                        switch (count & 0b11)
+                        {
+                        case 0:
+                            fa = fifo_a[DEPT_A - 1];
+                            fb = fifo_a[DEPT_A - 2];
+                            fc = fifo_a[DEPT_A - 3];
+                            fd = fifo_a[DEPT_A - 4];
+                            break;
 
-                    case 2:
-                        fa = fifo_b[DEPT_B - 1];
-                        fb = fifo_b[DEPT_B - 2];
-                        fc = fifo_b[DEPT_B - 3];
-                        fd = fifo_b[DEPT_B - 4];
-                        break;
-                    case 1:
-                        fa = fifo_c[DEPT_C - 1];
-                        fb = fifo_c[DEPT_C - 2];
-                        fc = fifo_c[DEPT_C - 3];
-                        fd = fifo_c[DEPT_C - 4];
-                        break;
-                    case 3:
-                        fa = fifo_d[DEPT_D - 1];
-                        fb = fifo_d[DEPT_D - 2];
-                        fc = fifo_d[DEPT_D - 3];
-                        fd = fifo_d[DEPT_D - 4];
-                        break;
+                        case 2:
+                            fa = fifo_b[DEPT_B - 1];
+                            fb = fifo_b[DEPT_B - 2];
+                            fc = fifo_b[DEPT_B - 3];
+                            fd = fifo_b[DEPT_B - 4];
+                            break;
+                        case 1:
+                            fa = fifo_c[DEPT_C - 1];
+                            fb = fifo_c[DEPT_C - 2];
+                            fc = fifo_c[DEPT_C - 3];
+                            fd = fifo_c[DEPT_C - 4];
+                            break;
+                        case 3:
+                            fa = fifo_d[DEPT_D - 1];
+                            fb = fifo_d[DEPT_D - 2];
+                            fc = fifo_d[DEPT_D - 3];
+                            fd = fifo_d[DEPT_D - 4];
+                            break;
 
-                    default:
-                        printf("Error, suspect overflow\n");
-                        break;
+                        default:
+                            printf("Error, suspect overflow\n");
+                            break;
+                        }
+                    }
+                    else{
+                        // MUL Mode 
+                        fa = fifo_a[DEPT_A-1];
+                        fb = fifo_b[DEPT_B-3];
+                        fc = fifo_c[DEPT_C-2];
+                        fd = fifo_d[DEPT_D-4];
                     }
 
                     ram->vec[fi].coeffs[0] = fa;
@@ -419,10 +433,14 @@ void ntt2x2(bram *ram, int mode, int decode)
                     // writeback
                     // printf("[%d] <= (%d, %d, %d, %d)\n", fi, fa, fb, fc, fd);
                 }
-                i1 -= w_m1;
-                i2 -= w_m1;
-                i3 -= w_m2;
-                i4 -= w_m2;
+                if (mode == NTT_MODE)
+                {
+                    // Only adjust omega in NTT mode
+                    i1 -= w_m1;
+                    i2 -= w_m1;
+                    i3 -= w_m2;
+                    i4 -= w_m2;
+                }
             }
         }
         decode = 0;
@@ -437,38 +455,48 @@ void ntt2x2(bram *ram, int mode, int decode)
         fd = FIFO(DEPT_D, fifo_d, 0);
         count++;
 
-        // Serial in Parallel out
-        switch (count & 0b11)
+        if (mode == NTT_MODE)
         {
-        case 0:
-            fa = fifo_a[DEPT_A - 1];
-            fb = fifo_a[DEPT_A - 2];
-            fc = fifo_a[DEPT_A - 3];
-            fd = fifo_a[DEPT_A - 4];
-            break;
+            // Serial in Parallel out
+            switch (count & 0b11)
+            {
+            case 0:
+                fa = fifo_a[DEPT_A - 1];
+                fb = fifo_a[DEPT_A - 2];
+                fc = fifo_a[DEPT_A - 3];
+                fd = fifo_a[DEPT_A - 4];
+                break;
 
-        case 2:
-            fa = fifo_b[DEPT_B - 1];
-            fb = fifo_b[DEPT_B - 2];
-            fc = fifo_b[DEPT_B - 3];
-            fd = fifo_b[DEPT_B - 4];
-            break;
-        case 1:
-            fa = fifo_c[DEPT_C - 1];
-            fb = fifo_c[DEPT_C - 2];
-            fc = fifo_c[DEPT_C - 3];
-            fd = fifo_c[DEPT_C - 4];
-            break;
-        case 3:
-            fa = fifo_d[DEPT_D - 1];
-            fb = fifo_d[DEPT_D - 2];
-            fc = fifo_d[DEPT_D - 3];
-            fd = fifo_d[DEPT_D - 4];
-            break;
+            case 2:
+                fa = fifo_b[DEPT_B - 1];
+                fb = fifo_b[DEPT_B - 2];
+                fc = fifo_b[DEPT_B - 3];
+                fd = fifo_b[DEPT_B - 4];
+                break;
+            case 1:
+                fa = fifo_c[DEPT_C - 1];
+                fb = fifo_c[DEPT_C - 2];
+                fc = fifo_c[DEPT_C - 3];
+                fd = fifo_c[DEPT_C - 4];
+                break;
+            case 3:
+                fa = fifo_d[DEPT_D - 1];
+                fb = fifo_d[DEPT_D - 2];
+                fc = fifo_d[DEPT_D - 3];
+                fd = fifo_d[DEPT_D - 4];
+                break;
 
-        default:
-            printf("Error, suspect overflow\n");
-            break;
+            default:
+                printf("Error, suspect overflow\n");
+                break;
+            }
+        }
+        else{
+            // MUL Mode 
+            fa = fifo_a[DEPT_A-1];
+            fb = fifo_b[DEPT_B-3];
+            fc = fifo_c[DEPT_C-2];
+            fd = fifo_d[DEPT_D-4];
         }
 
         ram->vec[fi].coeffs[0] = fa;
@@ -488,7 +516,7 @@ void ntt2x2(bram *ram, int mode, int decode)
     */
 }
 
-int ntt2x2_wrapper(int32_t r_gold[N], int32_t r[N])
+int ntt2x2_NTT(int32_t r_gold[N], int32_t r[N])
 {
     bram ram;
     // Load data into BRAM, 4 coefficients per line
@@ -496,11 +524,10 @@ int ntt2x2_wrapper(int32_t r_gold[N], int32_t r[N])
     // Compute NTT
     ntt2x2(&ram, NTT_MODE, DECODE_FALSE);
 
-    // print_reshaped_array(&ram, 4, "first 4");
-    // ntt2x2(&ram, MUL_MODE, DECODE_TRUE);
+    // Enable DECODE_TRUE only after NTT transform
 
     // Run the reference code
-    invntt_tomont(r_gold);
+    invntt_tomont(r_gold, NTT_MODE);
 
     // Compare with the reference code
     int32_t a, b, c, d;
@@ -509,8 +536,8 @@ int ntt2x2_wrapper(int32_t r_gold[N], int32_t r[N])
     int addr;
     int ret = 0;
 
-    // print_array(r_gold, N, "r_gold");
-    // print_reshaped_array(&ram, N/4, "r");
+    // print_array(r_gold, 32, "r_gold");
+    // print_reshaped_array(&ram, 8, "first 4");
 
     for (int i = 0; i < N; i += 4)
     {
@@ -542,24 +569,86 @@ int ntt2x2_wrapper(int32_t r_gold[N], int32_t r[N])
             return 1;
         }
     }
-    printf("==============Correct!\n");
+    printf("==============NTT is Correct!\n\n");
+    return 0;
+}
+
+int ntt2x2_MUL(int32_t r_gold[N], int32_t r[N])
+{
+    bram ram;
+    // Load data into BRAM, 4 coefficients per line
+    reshape(&ram, r);
+
+    // MUL Operation using NTT
+
+    // Enable DECODE_TRUE only after NTT transform
+    ntt2x2(&ram, MUL_MODE, DECODE_TRUE);
+
+    // Run the reference code
+    invntt_tomont(r_gold, MUL_MODE);
+
+    // Compare with the reference code
+    int32_t a, b, c, d;
+    int32_t ta, tb, tc, td;
+
+    int addr;
+    int ret = 0;
+
+    // print_array(r_gold, 32, "gold");
+    // print_reshaped_array(&ram, 8, "first 4");
+
+    for (int i = 0; i < N; i += 4)
+    {
+        // Get golden result
+        a = r_gold[i + 0];
+        b = r_gold[i + 1];
+        c = r_gold[i + 2];
+        d = r_gold[i + 3];
+
+        addr = i / 4;
+        ta = ram.vec[addr].coeffs[0];
+        tb = ram.vec[addr].coeffs[1];
+        tc = ram.vec[addr].coeffs[2];
+        td = ram.vec[addr].coeffs[3];
+
+        // Comapre with reference code
+
+        // Quick xor, I hate long if-else clause
+        ret |= a ^ ta;
+        ret |= b ^ tb;
+        ret |= c ^ tc;
+        ret |= d ^ td;
+
+        if (ret)
+        {
+            printf("Error at index: %d => %d\n", addr, i);
+            printf("%12d | %12d | %12d | %12d\n", a, b, c, d);
+            printf("%12d | %12d | %12d | %12d\n", ta, tb, tc, td);
+            return 1;
+        }
+    }
+    printf("==============MUL is Correct!\n\n");
     return 0;
 }
 
 int main()
 {
-    int32_t r[N], r_gold[N];
+    int32_t r[N], r_gold[N], r_gold_copy[N], r_copy[N];
     for (int i = 0; i < N; i++)
     {
         r[i] = i;
         r_gold[i] = i;
+        
+        r_gold_copy[i] = i; 
+        r_copy[i] = i;
     }
 
     // invntt_tomont(a_gold);
     // print_array(a_gold, N, "a_gold");
     // ntt2x2_wrapper(a);
     int ret = 0;
-    ret |= ntt2x2_wrapper(r_gold, r);
+    ret |= ntt2x2_NTT(r_gold, r);
+    ret |= ntt2x2_MUL(r_gold_copy, r_copy);
 
     return ret;
 }

@@ -51,22 +51,15 @@ void ntt(int32_t a[N]) {
   int32_t zeta, t;
 
   k = 0;
-  // for(len = 128; len > 0; len >>= 1) {
-  for(len = 128; len > 32; len >>= 1) {
-    printf("len %d\n", len);
+  for(len = 128; len > 0; len >>= 1) {
     for(start = 0; start < N; start = j + len) {
       zeta = zetas[++k];
       for(j = start; j < start + len; ++j) {
-        // index
-        printf("%d %d | %d\n", j, j+len, k);
-        // value
-        // printf("%d %d | %d\n", a[j], a[j+len], k);
         t = montgomery_reduce((int64_t)zeta * a[j + len]);
         a[j + len] = a[j] - t;
         a[j] = a[j] + t;
       }
     }
-    printf("===============================\n");
   }
 }
 
@@ -81,35 +74,30 @@ void ntt(int32_t a[N]) {
 *
 * Arguments:   - uint32_t p[N]: input/output coefficient array
 **************************************************/
-void invntt_tomont(int32_t a[N]) {
+void invntt_tomont(int32_t a[N], int mode) {
   unsigned int start, len, j, k;
   int32_t t, zeta;
   const int32_t f = 41978; // mont^2/256
 
-  k = 256;
-  // for(len = 1; len < N; len <<= 1) {
-  for(len = 1; len < 16; len <<= 1) {
-    printf("len %d\n", len);
-    for(start = 0; start < N; start = j + len) {
-      zeta = -zetas[--k];
-      for(j = start; j < start + len; ++j) {
-        if ( (j < 32 || j > 224) && (len > 2) )
-        {
-          // index
-          printf("%d %d | %d\n", j, j+len, k);
-          // value
-          // printf("%d %d | %d\n", a[j], a[j+len], zeta);
+  if (mode == NTT_MODE)
+  {
+    k = 256;
+    for(len = 1; len < N; len <<= 1) {
+      for(start = 0; start < N; start = j + len) {
+        zeta = -zetas[--k];
+        for(j = start; j < start + len; ++j) {
+          t = a[j];
+          a[j] = t + a[j + len];
+          a[j + len] = t - a[j + len];
+          a[j + len] = montgomery_reduce((int64_t)zeta * a[j + len]);
         }
-        t = a[j];
-        a[j] = t + a[j + len];
-        a[j + len] = t - a[j + len];
-        a[j + len] = montgomery_reduce((int64_t)zeta * a[j + len]);
       }
     }
-    printf("===============================\n");
+  }
+  else{
+    for(j = 0; j < N; ++j) {
+      a[j] = montgomery_reduce((int64_t)f * a[j]);
+    }
   }
 
-  for(j = 0; j < N; ++j) {
-    a[j] = montgomery_reduce((int64_t)f * a[j]);
-  }
 }
