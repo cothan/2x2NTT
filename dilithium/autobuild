@@ -1,0 +1,4 @@
+#!/bin/bash
+
+clang -o ntt2x2 ntt.c util.c reduce.c ntt2x2.c -g3 -O0
+./ntt2x2
