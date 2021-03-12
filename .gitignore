@@ -60,3 +60,4 @@ test_func/test_ntt_copy
 test_func/test_ntt_dit_dif
 *.json
 *.pyc
+dilithium/ntt2x2
