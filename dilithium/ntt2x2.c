@@ -5,6 +5,7 @@
 #include "util.h"
 #include "reduce.h"
 
+#define DEPT_I 3
 #define DEPT_A 4
 #define DEPT_B 6
 #define DEPT_C 5
@@ -80,10 +81,19 @@ void print_reshaped_array(bram *ram, int bound, const char *string)
     printf("\n");
 }
 
-void swap(int32_t *a, int32_t *b)
+void swap(int32_t *a, int32_t *b, int mode)
 {
-    int32_t tmp = *a;
-    *a = *b;
+    int32_t tmp;
+    if (mode)
+    {
+        tmp = *a;
+        *a = *b;
+    }
+    else
+    {
+        tmp = *b;
+        *a = *a;
+    }
     *b = tmp;
 }
 
@@ -113,7 +123,6 @@ void inverse_butterfly(int32_t *bj, int32_t *bjlen, const int32_t zeta, int32_t 
         a[j + len] = t - a[j + len];
         a[j + len] = montgomery_reduce((int64_t)zeta * a[j + len]); */
     int32_t t;
-    // printf("i: %d |  %d * %d\n", aj, zeta, ajlen);
 
     t = aj;
     aj = t + ajlen;
@@ -137,42 +146,72 @@ void reshape(bram *ram, int32_t in[N])
     }
 }
 
-void ntt2x2(bram *ram)
+/* Lazy, avoid transpose the matrix */
+int addr_decoder(int addr_in)
 {
-    int32_t fifo_a[DEPT_A] = {0},
+    /* 
+    [ 0  4  8 12] => [  0* 1  2  3 ]
+    [16 20 24 28] => [  4  5  6  7 ]
+    [32 36 40 44] => [  8  9 10 11 ]
+    [48 52 56 60] => [ 12 13 14 15 ]
+
+    [ 1  5  9 13] => [ 16 17  18 19 ]
+    [17 21 25 29] => [ 20 21* 22 23 ]
+    [33 37 41 45] => [ 24 25  26 27 ]
+    [49 53 57 61] => [ 28 29  30 31 ]
+
+    [ 2  6 10 14] => [ 32 33 34  35 ]
+    [18 22 26 30] => [ 36 37 38  39 ]
+    [34 38 42 46] => [ 40 41 42* 43 ]
+    [50 54 58 62] => [ 44 45 46  47 ]
+
+    [ 3  7 11 15] => [ 48 49 50 51 ]
+    [19 23 27 31] => [ 52 53 54 55 ]
+    [35 39 43 47] => [ 56 57 58 59 ]
+    [51 55 59 63] => [ 60 61 62 63*] 
+    */
+    const int my_map[N / 4] = {0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60,
+                               1, 5, 9, 13, 17, 21, 25, 29, 33, 37, 41, 45, 49, 53, 57, 61,
+                               2, 6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46, 50, 54, 58, 62,
+                               3, 7, 11, 15, 19, 23, 27, 31, 35, 39, 43, 47, 51, 55, 59, 63};
+    return my_map[addr_in];
+}
+
+void ntt2x2(bram *ram, int mode)
+{
+    int32_t fifo_i[DEPT_I] = {0},
+            fifo_a[DEPT_A] = {0},
             fifo_b[DEPT_B] = {0},
             fifo_c[DEPT_C] = {0},
             fifo_d[DEPT_D] = {0};
     int32_t a, b, c, d;
-    int32_t fa, fb, fc, fd;
+    int32_t fa, fb, fc, fd, fi;
 
     int count = 0;
     int write = 0;
-    int32_t fi, indexes[3] = {0};
 
     int i1, i2, i3, i4;
     int ram_i;
 
-    i1 = N - 1;
-    i2 = N - 2;
-    i3 = N / 2 - 1;
-    i4 = N / 2 - 1;
+    const int w_m1 = 2;
+    const int w_m2 = 1;
 
     // iterate 2 levels at a time
-    for (int s = 1; s < 4; s += 2)
+    for (int s = 1; s < 8; s += 2)
     {
         int m0 = 1 << (s - 1);
         int m1 = 1 << (s);
         int m2 = 1 << (s + 1);
 
-        int w_m1 = 1 << s;
-        int w_m2 = 1 << (s - 1);
-
         for (int j = 0; j < m0; j++)
         {
+            i1 = (N >> (s - 1)) - 1;
+            i2 = i1 - 1;
+            i3 = (N >> s) - 1;
+            i4 = i3;
             for (int k = 0; k < N; k += m2)
             {
-                int ram_i = k + j;
+                int ram_i = k + (j << 2);
 
                 int w1 = -zetas[i1];
                 int w2 = -zetas[i2];
@@ -185,44 +224,44 @@ void ntt2x2(bram *ram)
                 c = ram->vec[ram_i / 4].coeffs[2];
                 d = ram->vec[ram_i / 4].coeffs[3];
 
-                fi = FIFO(3, indexes, ram_i / 4);
-
-                if ( (ram_i < 32 || ram_i > 224) && (s > 2) )
+                /* For debugging purpose
+                if ((ram_i < 64 || ram_i > 192) && (s > 2))
                 {
                     // index
                     printf("%d, %d | %d\n", ram_i, ram_i + 1, i1);
                     printf("%d, %d | %d\n", ram_i + 2, ram_i + 3, i2);
                     // value
-                    // printf("%d %d | %d\n", a, b, w1);
-                    // printf("%d %d | %d\n", c, d, w2);
-                }
+                    printf("%d %d | %d\n", a, b, i1);
+                    printf("%d %d | %d\n", c, d, i2);
+                } */
 
                 inverse_butterfly(&a, &b, w1, a, b);
                 inverse_butterfly(&c, &d, w2, c, d);
 
-                swap(&b, &c);
+                swap(&b, &c, mode);
 
-                if ( (ram_i < 32 || ram_i > 224) && (s > 2) )
+                /* For debugging purpose
+                if ((ram_i < 64 || ram_i > 192) && (s > 2))
                 {
                     // index
                     printf("%d, %d | %d\n", ram_i, ram_i + 2, i3);
                     printf("%d, %d | %d\n", ram_i + 1, ram_i + 3, i4);
                     // value
-                    // printf("%d %d | %d\n", a, b, w3);
-                    // printf("%d %d | %d\n", c, d, w4);
-                    printf("==============================%d\n", ram_i / 4);
-                }
+                    printf("%d %d | %d\n", a, b, i3);
+                    printf("%d %d | %d\n", c, d, i4);
+                    printf("==============================%d %d | %d %d\n", ram_i / 4, ram_i, j, k);
+                } */
 
                 inverse_butterfly(&a, &b, w3, a, b);
                 inverse_butterfly(&c, &d, w4, c, d);
 
-
+                fi = FIFO(DEPT_I, fifo_i, ram_i / 4);
                 fa = FIFO(DEPT_A, fifo_a, a);
                 fb = FIFO(DEPT_B, fifo_b, b);
                 fc = FIFO(DEPT_C, fifo_c, c);
                 fd = FIFO(DEPT_D, fifo_d, d);
 
-                if (count == 3)
+                if (count == DEPT_I)
                 {
                     // FIFO_A is full
                     write = 1;
@@ -273,6 +312,8 @@ void ntt2x2(bram *ram)
                     ram->vec[fi].coeffs[1] = fb;
                     ram->vec[fi].coeffs[2] = fc;
                     ram->vec[fi].coeffs[3] = fd;
+                    // writeback
+                    // printf("[%d] <= (%d, %d, %d, %d)\n", fi, fa, fb, fc, fd);
                 }
                 i1 -= w_m1;
                 i2 -= w_m1;
@@ -280,43 +321,141 @@ void ntt2x2(bram *ram)
                 i4 -= w_m2;
             }
         }
-        print_reshaped_array(ram, N / 4, "after level 0, 1");
     }
+    // Write back left over coefficients in FIFO
+    for (int i = 0; i < DEPT_I; i++)
+    {
+        fi = FIFO(DEPT_I, fifo_i, 0);
+        fa = FIFO(DEPT_A, fifo_a, 0);
+        fb = FIFO(DEPT_B, fifo_b, 0);
+        fc = FIFO(DEPT_C, fifo_c, 0);
+        fd = FIFO(DEPT_D, fifo_d, 0);
+        count++;
+
+        // Serial in Parallel out
+        switch (count & 0b11)
+        {
+        case 0:
+            fa = fifo_a[DEPT_A - 1];
+            fb = fifo_a[DEPT_A - 2];
+            fc = fifo_a[DEPT_A - 3];
+            fd = fifo_a[DEPT_A - 4];
+            break;
+
+        case 2:
+            fa = fifo_b[DEPT_B - 1];
+            fb = fifo_b[DEPT_B - 2];
+            fc = fifo_b[DEPT_B - 3];
+            fd = fifo_b[DEPT_B - 4];
+            break;
+        case 1:
+            fa = fifo_c[DEPT_C - 1];
+            fb = fifo_c[DEPT_C - 2];
+            fc = fifo_c[DEPT_C - 3];
+            fd = fifo_c[DEPT_C - 4];
+            break;
+        case 3:
+            fa = fifo_d[DEPT_D - 1];
+            fb = fifo_d[DEPT_D - 2];
+            fc = fifo_d[DEPT_D - 3];
+            fd = fifo_d[DEPT_D - 4];
+            break;
+
+        default:
+            printf("Error, suspect overflow\n");
+            break;
+        }
+
+        ram->vec[fi].coeffs[0] = fa;
+        ram->vec[fi].coeffs[1] = fb;
+        ram->vec[fi].coeffs[2] = fc;
+        ram->vec[fi].coeffs[3] = fd;
+
+        // writeback
+        // printf("[%d] <= (%d, %d, %d, %d)\n", fi, fa, fb, fc, fd);
+    }
+    /* For debugging purpose 
+    print_array(fifo_i, DEPT_I, "fifo_i");
+    print_array(fifo_a, DEPT_A, "fifo_a");
+    print_array(fifo_b, DEPT_B, "fifo_b");
+    print_array(fifo_c, DEPT_C, "fifo_c");
+    print_array(fifo_d, DEPT_D, "fifo_d"); 
+    */
+
+    // print_reshaped_array(ram, N / 4, "result");
 }
 
-void ntt2x2_wrapper(int32_t a[N])
+int ntt2x2_wrapper(int32_t r_gold[N], int32_t r[N])
 {
     bram ram;
-    reshape(&ram, a);
+    const int NTT = 1;
+    const int MUL = 0;
+    // Load data into BRAM, 4 coefficients per line
+    reshape(&ram, r);
+    // Compute NTT
+    ntt2x2(&ram, NTT);
 
-    ntt2x2(&ram);
+    // Run the reference code
+    invntt_tomont(r_gold);
+
+    // Compare with the reference code
+    int32_t a, b, c, d;
+    int32_t ta, tb, tc, td;
+
+    int addr;
+    int ret = 0;
+
+    // print_array(r_gold, N, "r_gold");
+    // print_reshaped_array(&ram, N/4, "r");
+
+    for (int i = 0; i < N; i += 4)
+    {
+        // Get golden result
+        a = r_gold[i + 0];
+        b = r_gold[i + 1];
+        c = r_gold[i + 2];
+        d = r_gold[i + 3];
+
+        addr = addr_decoder(i / 4);
+        ta = ram.vec[addr].coeffs[0];
+        tb = ram.vec[addr].coeffs[1];
+        tc = ram.vec[addr].coeffs[2];
+        td = ram.vec[addr].coeffs[3];
+
+        // Comapre with reference code
+
+        // Quick xor, I hate long if
+        ret |= a ^ ta;
+        ret |= b ^ tb;
+        ret |= c ^ tc;
+        ret |= d ^ td;
+
+        if (ret)
+        {
+            printf("Error at index: %d => %d\n", addr, i);
+            printf("%d - %d - %d - %d\n", a, b, c, d);
+            printf("%d - %d - %d - %d\n", ta, tb, tc, td);
+            return 1;
+        }
+    }
+    printf("==============Correct!\n");
+    return 0;
 }
 
 int main()
 {
-    // test FIFO
-    // int32_t fifo[7] = {0, 1, 2, 3, 4, 5, 6};
-    // int32_t out;
-    // print_array(fifo, 7, "arr");
-    // out = FIFO(7, fifo, 8);
-    // printf("output: %d\n", out);
-    // print_array(fifo, 7, "arr");
-    // out = FIFO(7, fifo, 9);
-    // printf("output: %d\n", out);
-    // print_array(fifo, 7, "arr");
-
-    // test reshape
-
-    int32_t a[N], a_gold[N];
+    int32_t r[N], r_gold[N];
     for (int i = 0; i < N; i++)
     {
-        a[i] = i;
-        a_gold[i] = i;
+        r[i] = i;
+        r_gold[i] = i;
     }
 
-    invntt_tomont(a_gold);
-    print_array(a_gold, N, "a_gold");
-    ntt2x2_wrapper(a);
+    // invntt_tomont(a_gold);
+    // print_array(a_gold, N, "a_gold");
+    // ntt2x2_wrapper(a);
+    int ret = 0;
+    ret |= ntt2x2_wrapper(r_gold, r);
 
-    return 0;
+    return ret;
 }
