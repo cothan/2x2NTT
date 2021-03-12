@@ -21,7 +21,7 @@ void ntt_dit(uint16_t *a, const uint16_t *omega)
             {
                 uint16_t temp = montgomery_reduce(((uint32_t)W * a[j + Distance]));
                 // printf("DIT: %d - %d | %d\n", j, j+Distance, jTwiddle);
-                a[j + Distance] = (a[j] + 3*NEWHOPE_Q - temp) % NEWHOPE_Q;
+                a[j + Distance] = (a[j] + NEWHOPE_Q - temp) % NEWHOPE_Q;
                 a[j] = (a[j] + temp) % NEWHOPE_Q;
             }
         }
@@ -32,8 +32,52 @@ void ntt_dit(uint16_t *a, const uint16_t *omega)
 
 void ntt_dit_2x2(uint16_t *a, const uint16_t *omega)
 {
-    (void) omega;
-    (void) a;
+    for (uint16_t layer = 1; layer < NEWHOPE_N; layer <<= 2)
+    {
+        uint16_t m0 = 1 << (layer - 1);
+        uint16_t m1 = 1 << layer;
+        uint16_t m2 = 1 << (layer + 1);
+
+        uint16_t omega_m1 = NEWHOPE_N >> layer;
+        uint16_t omega_m2 = NEWHOPE_N >> (layer + 1);
+
+        uint16_t index1 = 0,
+                 index2 = 0,
+                 index3 = 0,
+                 index4 = NEWHOPE_N >> 2;
+        for (uint16_t j = 0; j < m0; j++)
+        {
+            for (uint16_t k = 0; k < NEWHOPE_N; k += m2)
+            {
+                uint16_t b = k + j;
+
+                uint16_t omega_tmp1 = omega[index1];
+                uint16_t omega_tmp2 = omega[index2];
+
+                uint16_t u11 = a[b],
+                         t11 = a[b + m0],
+                         u12 = a[b + m1],
+                         t12 = a[b + m1 + m0];
+                t11 = montgomery_reduce((omega_tmp1 * t11));
+                t12 = montgomery_reduce((omega_tmp2 * t12));
+
+                uint16_t top_p = (u11 + t11) % NEWHOPE_Q,
+                         top_m = (u11 - t11) % NEWHOPE_Q,
+                         bot_p = (u12 + t12) % NEWHOPE_Q,
+                         bot_m = (u12 - t12) % NEWHOPE_Q;
+                uint16_t tmp = bot_p;
+                bot_p = top_m;
+                top_m = tmp;
+
+                index3 = (b & (m1-1)) * omega_m2;
+                index4 = ((b+m0) & (m1 -1)) * omega_m2;
+
+                uint16_t omega_tmp3 = omega[index3],
+                         omega_tmp4 = omega[index4];
+
+            }
+        }
+    }
 }
 
 // NTT DIF RN BO->NO
@@ -52,7 +96,7 @@ void ntt_dif(uint16_t *a, const uint16_t *omega)
                 uint16_t W = omega[Jtwiddle++];
                 uint16_t temp = a[J];
                 a[J] = (temp + a[J + Distance]) % NEWHOPE_Q;
-                a[J + Distance] = montgomery_reduce((((uint32_t)temp + 3 * NEWHOPE_Q - a[J + Distance]) * W));
+                a[J + Distance] = montgomery_reduce((((uint32_t)temp + NEWHOPE_Q - a[J + Distance]) * W));
             }
         }
         NumberOfProblems = NumberOfProblems * 2;
@@ -78,7 +122,7 @@ void ntt_dit_full_reduction(uint16_t *a, const uint16_t *omega)
             for (uint16_t j = k; j <= JLast; j += GapToNextPair)
             {
                 uint32_t temp = (W * a[j + Distance]) % NEWHOPE_Q;
-                a[j + Distance] = (a[j] + 3 * NEWHOPE_Q - temp) % NEWHOPE_Q;
+                a[j + Distance] = (a[j] + NEWHOPE_Q - temp) % NEWHOPE_Q;
                 a[j] = (a[j] + temp) % NEWHOPE_Q;
                 count++;
             }
@@ -106,7 +150,7 @@ void ntt_dif_full_reduction(uint16_t *a, const uint16_t *omega)
                 uint32_t W = omega[Jtwiddle++];
                 uint16_t temp = a[J];
                 a[J] = (temp + a[J + Distance]) % NEWHOPE_Q;
-                a[J + Distance] = (((uint32_t)temp + 3 * NEWHOPE_Q - a[J + Distance]) * W) % NEWHOPE_Q;
+                a[J + Distance] = (((uint32_t)temp + NEWHOPE_Q - a[J + Distance]) * W) % NEWHOPE_Q;
                 count++;
             }
         }
@@ -121,7 +165,6 @@ void scramble(poly *a)
     bitrev_vector(a->coeffs);
     return;
 }
-
 
 int compare(poly *r, poly *r_test, const char *string)
 {
@@ -161,9 +204,6 @@ int compare(poly *r, poly *r_test, const char *string)
     return 0;
 }
 
-
-
-
 void printArray(uint16_t *sipo, int length, char const *string)
 {
     printf("%s: [", string);
@@ -182,6 +222,10 @@ void full_reduce(poly *a)
     }
 }
 
+
+// R = 2^18 
+// AR * BR = ABR^2  =>> mont => ABR 
+// mont (ABR)  => AB 
 void full_reduce_from_montgomery(poly *a)
 {
     for (uint16_t i = 0; i < NEWHOPE_N; i++)
@@ -204,7 +248,6 @@ void mul_coefficients_full_reduce(uint16_t *r, uint16_t *a)
     }
 }
 
-
 void copy_poly(poly *a, poly *b)
 {
     for (uint16_t i = 0; i < NEWHOPE_N; i++)
@@ -215,13 +258,11 @@ void copy_poly(poly *a, poly *b)
 
 void copy_ram(uint64_t *ram, uint64_t *origin_ram)
 {
-    for (uint16_t i = 0; i < NEWHOPE_N/4; i++)
+    for (uint16_t i = 0; i < NEWHOPE_N / 4; i++)
     {
         ram[i] = origin_ram[i];
     }
 }
-
-
 
 /**** From test6 ****/
 void my_poly_ntt_dif(poly *r)
@@ -232,9 +273,9 @@ void my_poly_ntt_dif(poly *r)
 
 void my_poly_invntt_dif(poly *r)
 {
-  bitrev_vector(r->coeffs);
-  ntt_dif((uint16_t *)r->coeffs, my_omegas_inv_bitrev_montgomery);
-  mul_coefficients(r->coeffs, my_gammas_inv_montgomery);
+    bitrev_vector(r->coeffs);
+    ntt_dif((uint16_t *)r->coeffs, my_omegas_inv_bitrev_montgomery);
+    mul_coefficients(r->coeffs, my_gammas_inv_montgomery);
 }
 /**** ********** ****/
 
@@ -247,9 +288,9 @@ void my_poly_ntt_dif_full_reduction(poly *r)
 
 void my_poly_invntt_dif_full_reduction(poly *r)
 {
-  bitrev_vector(r->coeffs);
-  ntt_dif_full_reduction((uint16_t *)r->coeffs, my_omegas_inv_bitrev);
-  mul_coefficients_full_reduce(r->coeffs, my_gammas_inv);
+    bitrev_vector(r->coeffs);
+    ntt_dif_full_reduction((uint16_t *)r->coeffs, my_omegas_inv_bitrev);
+    mul_coefficients_full_reduce(r->coeffs, my_gammas_inv);
 }
 /**** ********** ****/
 
@@ -262,9 +303,9 @@ void my_poly_ntt_dit(poly *r)
 
 void my_poly_invntt_dit(poly *r)
 {
-  bitrev_vector(r->coeffs);
-  ntt_dit((uint16_t *)r->coeffs, my_omegas_inv_montgomery);
-  mul_coefficients(r->coeffs, my_gammas_inv_montgomery);
+    bitrev_vector(r->coeffs);
+    ntt_dit((uint16_t *)r->coeffs, my_omegas_inv_montgomery);
+    mul_coefficients(r->coeffs, my_gammas_inv_montgomery);
 }
 /**** ********** ****/
 
@@ -277,8 +318,8 @@ void my_poly_ntt_dit_full_reduction(poly *r)
 
 void my_poly_invntt_dit_full_reduction(poly *r)
 {
-  bitrev_vector(r->coeffs);
-  ntt_dit_full_reduction((uint16_t *)r->coeffs, my_omegas_inv);
-  mul_coefficients_full_reduce(r->coeffs, my_gammas_inv);
+    bitrev_vector(r->coeffs);
+    ntt_dit_full_reduction((uint16_t *)r->coeffs, my_omegas_inv);
+    mul_coefficients_full_reduce(r->coeffs, my_gammas_inv);
 }
 /**** ********** ****/
