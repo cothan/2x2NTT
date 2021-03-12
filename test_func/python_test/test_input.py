@@ -4,7 +4,7 @@ import random
 
 NEWHOPE_Q = 12289
 # logQ = 14
-logN = 10
+logN = 8
 NEWHOPE_N = 2**logN
 
 # INPUT = range(NEWHOPE_N)

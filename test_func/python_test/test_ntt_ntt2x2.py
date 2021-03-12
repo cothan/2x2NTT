@@ -136,9 +136,12 @@ def iterative_ntt_2x2(a):
         _index4 = NEWHOPE_N >> 2
         # print omega_m1
         # print omega_m2
+        # print('=========================', s)
         for k in range(0, NEWHOPE_N, m2):
             for j in range(m0):
                 b = j + k
+                
+                # print(s, b, b + m0, b+m1, b+m1+m0)
 
                 # NTT1
                 # prepare omega_tmp
@@ -285,6 +288,7 @@ def iterative_ntt_ches(a):
         for j in range(m // 2):
             for k in range(0, NEWHOPE_N, m):
                 b = k + j
+                # print(b, b + m//2, omega_tmp)
 
                 u = a[b]
                 t = a[b + m // 2]
@@ -301,8 +305,9 @@ def iterative_ntt_ches(a):
                             omega_tmp), '--', s)
 
             omega_tmp += omega_m
+        # print('=================', s)
         if DEBUG2:
-            print('=================', s)
+            pass
     return a
 
 
@@ -335,10 +340,11 @@ def iterative_ntt_2x2_ches(a):
         _index1 = _index2 = 0
         _index3 = 0
         _index4 = NEWHOPE_N >> 2
-
+        print('=========================', s)
         for j in range(m0):
             for k in range(0, NEWHOPE_N, m2):
                 b = k + j
+                print(s, b, b + m0, b+m1, b+m1+m0)
 
                 # NTT1
                 # prepare omega_tmp
