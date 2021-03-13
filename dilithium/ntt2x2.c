@@ -102,18 +102,6 @@ int32_t FIFO(const int dept, int32_t *fifo, const int32_t new)
     return out;
 }
 
-void print_reshaped_array(bram *ram, int bound, const char *string)
-{
-    printf("%s :\n", string);
-    for (int i = 0; i < bound; i++)
-    {
-        for (int j = 0; j < 4; j++)
-        {
-            printf("%d, ", ram->vec[i].coeffs[j]);
-        }
-    }
-    printf("\n");
-}
 
 void swap(int32_t *a, int32_t *b)
 {
@@ -165,18 +153,6 @@ void inverse_butterfly(int mode, int32_t *bj, int32_t *bjlen, const int32_t zeta
 
     *bj = aj;
     *bjlen = ajlen;
-}
-
-// Store 4 coefficients per line
-void reshape(bram *ram, int32_t in[N])
-{
-    for (int i = 0; i < N / 4; i++)
-    {
-        for (int j = 0; j < 4; j++)
-        {
-            ram->vec[i].coeffs[j] = in[4 * i + j];
-        }
-    }
 }
 
 /* Lazy, avoid transpose the matrix */
