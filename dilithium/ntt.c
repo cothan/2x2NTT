@@ -74,30 +74,42 @@ void ntt(int32_t a[N]) {
 *
 * Arguments:   - uint32_t p[N]: input/output coefficient array
 **************************************************/
-void invntt_tomont(int32_t a[N], int mode) {
+void invntt_tomont(int32_t a[N]) {
   unsigned int start, len, j, k;
   int32_t t, zeta;
   const int32_t f = 41978; // mont^2/256
 
-  if (mode == NTT_MODE)
-  {
-    k = 256;
-    for(len = 1; len < N; len <<= 1) {
-      for(start = 0; start < N; start = j + len) {
-        zeta = -zetas[--k];
-        for(j = start; j < start + len; ++j) {
-          t = a[j];
-          a[j] = t + a[j + len];
-          a[j + len] = t - a[j + len];
-          a[j + len] = montgomery_reduce((int64_t)zeta * a[j + len]);
-        }
+  k = 256;
+  for(len = 1; len < N; len <<= 1) {
+    for(start = 0; start < N; start = j + len) {
+      zeta = -zetas[--k];
+      for(j = start; j < start + len; ++j) {
+        t = a[j];
+        a[j] = t + a[j + len];
+        a[j + len] = t - a[j + len];
+        a[j + len] = montgomery_reduce((int64_t)zeta * a[j + len]);
       }
     }
   }
-  else{
-    for(j = 0; j < N; ++j) {
-      a[j] = montgomery_reduce((int64_t)f * a[j]);
-    }
-  }
 
+  for(j = 0; j < N; ++j) {
+    a[j] = montgomery_reduce((int64_t)f * a[j]);
+  }
+}
+
+/*************************************************
+* Name:        pointwise_montgomery
+*
+* Description: Pointwise multiplication of polynomials in NTT domain
+*              representation and multiplication of resulting polynomial
+*              by 2^{-32}.
+*
+* Arguments:   - poly *c: pointer to output polynomial
+*              - const poly *a: pointer to first input polynomial
+*              - const poly *b: pointer to second input polynomial
+**************************************************/
+void pointwise_montgomery(int32_t *c, int32_t *a, int32_t *b) {
+  unsigned int i;
+  for(i = 0; i < N; ++i)
+    c[i] = montgomery_reduce((int64_t)a[i] * b[i]);
 }

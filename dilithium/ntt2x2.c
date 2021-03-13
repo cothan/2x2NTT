@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <time.h>
 #include "params.h"
 #include "ntt.h"
+#include "ntt2x2.h"
 #include "util.h"
 #include "reduce.h"
 
@@ -14,17 +17,7 @@
 
 #define LOG_N  8 // N= 256, => log(N) = 8
 
-// enum OP {NTT_MODE, MUL_MODE, DECODE_TRUE, DECODE_FALSE};
-
-typedef struct
-{
-    int32_t coeffs[4];
-} line;
-
-typedef struct
-{
-    line vec[N / 4];
-} bram;
+enum OP {NTT_MODE, MUL_MODE, DECODE_TRUE, DECODE_FALSE};
 
 static const int32_t zetas[N] = {
          0,    25847, -2608894,  -518909,   237124,  -777960,  -876248,   466468,
@@ -61,7 +54,7 @@ static const int32_t zetas[N] = {
    -554416,  3919660,   -48306, -1362209,  3937738,  1400424,  -846154,  1976782
 };
 
-static const int32_t MUL_RAM[N] = {
+int32_t MUL_RAM[N] = {
     41978, 41978, 41978, 41978, 41978, 41978, 41978, 41978, 
     41978, 41978, 41978, 41978, 41978, 41978, 41978, 41978, 
     41978, 41978, 41978, 41978, 41978, 41978, 41978, 41978, 
@@ -158,19 +151,20 @@ void inverse_butterfly(int mode, int32_t *bj, int32_t *bjlen, const int32_t zeta
 
     if (mode == NTT_MODE)
     {
-        // NTT
-        t = aj;
-        aj = t + ajlen;
-        ajlen = t - ajlen;
-        ajlen = montgomery_reduce((int64_t)zeta * ajlen);
-        *bj = aj;
-        *bjlen = ajlen;
+        // NTT 
+        t = aj; 
     }
     else{
-        // MUL 
-        *bj = aj;
-        *bjlen = montgomery_reduce(zeta*ajlen);
+        // MUL
+        t = ajlen << 1;
     }
+
+    aj = t + ajlen;
+    ajlen = t - ajlen;
+    ajlen = montgomery_reduce((int64_t) zeta * ajlen);
+
+    *bj = aj;
+    *bjlen = ajlen;
 }
 
 // Store 4 coefficients per line
@@ -189,25 +183,25 @@ void reshape(bram *ram, int32_t in[N])
 int addr_decoder(int addr_in)
 {
     /* 
-    [ 0  4  8 12] => [  0* 1  2  3 ]
-    [16 20 24 28] => [  4  5  6  7 ]
-    [32 36 40 44] => [  8  9 10 11 ]
-    [48 52 56 60] => [ 12 13 14 15 ]
+    [ 0  4  8 12] <= [  0* 1  2  3 ]
+    [16 20 24 28] <= [  4  5  6  7 ]
+    [32 36 40 44] <= [  8  9 10 11 ]
+    [48 52 56 60] <= [ 12 13 14 15 ]
 
-    [ 1  5  9 13] => [ 16 17  18 19 ]
-    [17 21 25 29] => [ 20 21* 22 23 ]
-    [33 37 41 45] => [ 24 25  26 27 ]
-    [49 53 57 61] => [ 28 29  30 31 ]
+    [ 1  5  9 13] <= [ 16 17  18 19 ]
+    [17 21 25 29] <= [ 20 21* 22 23 ]
+    [33 37 41 45] <= [ 24 25  26 27 ]
+    [49 53 57 61] <= [ 28 29  30 31 ]
 
-    [ 2  6 10 14] => [ 32 33 34  35 ]
-    [18 22 26 30] => [ 36 37 38  39 ]
-    [34 38 42 46] => [ 40 41 42* 43 ]
-    [50 54 58 62] => [ 44 45 46  47 ]
+    [ 2  6 10 14] <= [ 32 33 34  35 ]
+    [18 22 26 30] <= [ 36 37 38  39 ]
+    [34 38 42 46] <= [ 40 41 42* 43 ]
+    [50 54 58 62] <= [ 44 45 46  47 ]
 
-    [ 3  7 11 15] => [ 48 49 50 51 ]
-    [19 23 27 31] => [ 52 53 54 55 ]
-    [35 39 43 47] => [ 56 57 58 59 ]
-    [51 55 59 63] => [ 60 61 62 63*] 
+    [ 3  7 11 15] <= [ 48 49 50 51 ]
+    [19 23 27 31] <= [ 52 53 54 55 ]
+    [35 39 43 47] <= [ 56 57 58 59 ]
+    [51 55 59 63] <= [ 60 61 62 63*] 
     */
     const int my_map[N / 4] = {0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60,
                                1, 5, 9, 13, 17, 21, 25, 29, 33, 37, 41, 45, 49, 53, 57, 61,
@@ -216,7 +210,7 @@ int addr_decoder(int addr_in)
     return my_map[addr_in];
 }
 
-void ntt2x2(bram *ram, int mode, int decode)
+void ntt2x2(bram *ram, int32_t *mul_ram, int mode, int decode)
 {
     int32_t fifo_i[DEPT_I] = {0},
             fifo_a[DEPT_A] = {0},
@@ -228,8 +222,7 @@ void ntt2x2(bram *ram, int mode, int decode)
     int32_t save_a, save_b, save_c, save_d;
 
     int i1, i2, i3, i4;
-    int ram_i;
-    int bound;
+    int ram_i, bound, addr;
 
     int count = 0;
     int write = 0;
@@ -246,31 +239,29 @@ void ntt2x2(bram *ram, int mode, int decode)
         bound = LOG_N;
     }
     else{
-        bound = 2;
+        bound = 1;
     }
 
     // iterate 2 levels at a time
-    for (int s = 1; s < bound; s += 2)
+    for (int s = 0; s < bound; s += 2)
     {
-        int m0 = 1 << (s - 1);
-        int m1 = 1 << (s);
-        int m2 = 1 << (s + 1);
-
-        for (int j = 0; j < m0; j++)
+        for (int j = 0; j < (1 << s); j++)
         {
             if (mode == NTT_MODE)
             {
                 // NTT mode
-                i1 = (N >> (s - 1)) - 1;
-                i2 = i1 - 1;
-                i3 = (N >> s) - 1;
-                i4 = i3;
+                // Layer s 
+                i1 = (N >> s) - 1;
+                i2 = (N >> s) - 2;
+                // Layer s + 1
+                i4 = i3 = (N >> (s+1)) - 1;
             }
             
 
-            for (int k = 0; k < N; k += m2)
+            for (int k = 0; k < N/4; k += 1 << s)
             {
-                if (mode == MUL_MODE){
+                if (mode == MUL_MODE)
+                {
                     // MUL mode 
                     i1 = m_counter++;
                     i2 = m_counter++;
@@ -278,7 +269,7 @@ void ntt2x2(bram *ram, int mode, int decode)
                     i4 = m_counter++;
                 }
 
-                int addr = (k + (j << 2))/4; 
+                addr = k + j; 
                 if (decode == DECODE_TRUE)
                 {
                     ram_i = addr_decoder(addr);
@@ -296,10 +287,10 @@ void ntt2x2(bram *ram, int mode, int decode)
                     w4 = -zetas[i4];
                 }
                 else{
-                    w1 = MUL_RAM[i1];
-                    w2 = MUL_RAM[i2];
-                    w3 = MUL_RAM[i3];
-                    w4 = MUL_RAM[i4];
+                    w1 = mul_ram[i1];
+                    w2 = mul_ram[i2];
+                    w3 = mul_ram[i3];
+                    w4 = mul_ram[i4];
                 }
 
                 a = ram->vec[ram_i].coeffs[0];
@@ -443,6 +434,7 @@ void ntt2x2(bram *ram, int mode, int decode)
                 }
             }
         }
+        // Decode only happen once
         decode = 0;
     }
     // Write back left over coefficients in FIFO
@@ -522,12 +514,14 @@ int ntt2x2_NTT(int32_t r_gold[N], int32_t r[N])
     // Load data into BRAM, 4 coefficients per line
     reshape(&ram, r);
     // Compute NTT
-    ntt2x2(&ram, NTT_MODE, DECODE_FALSE);
-
+    ntt2x2(&ram, MUL_RAM, NTT_MODE, DECODE_FALSE);
+    
     // Enable DECODE_TRUE only after NTT transform
+    ntt2x2(&ram, MUL_RAM, MUL_MODE, DECODE_TRUE);
+
 
     // Run the reference code
-    invntt_tomont(r_gold, NTT_MODE);
+    invntt_tomont(r_gold);
 
     // Compare with the reference code
     int32_t a, b, c, d;
@@ -536,8 +530,8 @@ int ntt2x2_NTT(int32_t r_gold[N], int32_t r[N])
     int addr;
     int ret = 0;
 
-    // print_array(r_gold, 32, "r_gold");
-    // print_reshaped_array(&ram, 8, "first 4");
+    // print_array(r_gold, 16, "r_gold");
+    // print_reshaped_array(&ram, 4, "ram");
 
     for (int i = 0; i < N; i += 4)
     {
@@ -547,7 +541,7 @@ int ntt2x2_NTT(int32_t r_gold[N], int32_t r[N])
         c = r_gold[i + 2];
         d = r_gold[i + 3];
 
-        addr = addr_decoder(i / 4);
+        addr = addr_decoder( i / 4 );
         ta = ram.vec[addr].coeffs[0];
         tb = ram.vec[addr].coeffs[1];
         tc = ram.vec[addr].coeffs[2];
@@ -555,7 +549,7 @@ int ntt2x2_NTT(int32_t r_gold[N], int32_t r[N])
 
         // Comapre with reference code
 
-        // Quick xor, I hate long if
+        // Quick xor, I hate long if-else clause
         ret |= a ^ ta;
         ret |= b ^ tb;
         ret |= c ^ tc;
@@ -569,7 +563,7 @@ int ntt2x2_NTT(int32_t r_gold[N], int32_t r[N])
             return 1;
         }
     }
-    printf("==============NTT is Correct!\n\n");
+    // printf("==============NTT is Correct!\n\n");
     return 0;
 }
 
@@ -579,13 +573,14 @@ int ntt2x2_MUL(int32_t r_gold[N], int32_t r[N])
     // Load data into BRAM, 4 coefficients per line
     reshape(&ram, r);
 
+
     // MUL Operation using NTT
-
     // Enable DECODE_TRUE only after NTT transform
-    ntt2x2(&ram, MUL_MODE, DECODE_TRUE);
-
+    // This example we only do pointwise multiplication
+    ntt2x2(&ram, MUL_RAM, MUL_MODE, DECODE_FALSE);
+    
     // Run the reference code
-    invntt_tomont(r_gold, MUL_MODE);
+    pointwise_montgomery(r_gold, r_gold, MUL_RAM);
 
     // Compare with the reference code
     int32_t a, b, c, d;
@@ -595,7 +590,7 @@ int ntt2x2_MUL(int32_t r_gold[N], int32_t r[N])
     int ret = 0;
 
     // print_array(r_gold, 32, "gold");
-    // print_reshaped_array(&ram, 8, "first 4");
+    // print_reshaped_array(&ram, 8, "first 8");
 
     for (int i = 0; i < N; i += 4)
     {
@@ -627,28 +622,47 @@ int ntt2x2_MUL(int32_t r_gold[N], int32_t r[N])
             return 1;
         }
     }
-    printf("==============MUL is Correct!\n\n");
+    // printf("==============MUL is Correct!\n\n");
     return 0;
 }
 
+#define TESTS 1000
+
 int main()
 {
+    srand(time(0));
     int32_t r[N], r_gold[N], r_gold_copy[N], r_copy[N];
-    for (int i = 0; i < N; i++)
+    int32_t t1, t2;
+    int ret = 0;
+
+    for (int k = 0; k < TESTS; k++)
     {
-        r[i] = i;
-        r_gold[i] = i;
-        
-        r_gold_copy[i] = i; 
-        r_copy[i] = i;
+        for (int i = 0; i < N; i++)
+        {
+            // t1 = i;
+            t1 = rand() % Q;
+            r[i] = t1;
+            r_gold[i] = t1;
+            
+            t2 = rand() % Q;
+            r_gold_copy[i] = t2; 
+            r_copy[i] = t2;
+        }
+
+        ret |= ntt2x2_NTT(r_gold, r);
+        ret |= ntt2x2_MUL(r_gold_copy, r_copy);
+
+        if (ret)
+        {
+           break;
+        }
     }
 
-    // invntt_tomont(a_gold);
-    // print_array(a_gold, N, "a_gold");
-    // ntt2x2_wrapper(a);
-    int ret = 0;
-    ret |= ntt2x2_NTT(r_gold, r);
-    ret |= ntt2x2_MUL(r_gold_copy, r_copy);
+    if (ret)
+    {
+        printf("ERROR\n");
+    }
+    printf("OK\n");
 
     return ret;
 }

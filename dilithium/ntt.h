@@ -8,9 +8,9 @@
 void ntt(int32_t a[N]);
 
 #define invntt_tomont DILITHIUM_NAMESPACE(invntt_tomont)
-void invntt_tomont(int32_t a[N], int mode);
+void invntt_tomont(int32_t a[N]);
 
-enum OP {NTT_MODE, MUL_MODE, DECODE_TRUE, DECODE_FALSE};
-
+#define pointwise_montgomery DILITHIUM_NAMESPACE(pointwise_montgomery)
+void pointwise_montgomery(int32_t *c, int32_t *a, int32_t *b);
 
 #endif
