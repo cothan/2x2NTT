@@ -35,3 +35,15 @@ void reshape(bram *ram, int32_t in[N])
         }
     }
 }
+
+
+// Compare array 
+int compare_array(int32_t *a, int32_t *b, int bound)
+{
+    for (int i = 0; i < bound; i++)
+    {
+        if (a[i] != b[i])
+            return 1;
+    }
+    return 0;
+}

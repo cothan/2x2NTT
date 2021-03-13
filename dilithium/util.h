@@ -11,4 +11,6 @@ void print_reshaped_array(bram *ram, int bound, const char *string);
 
 void reshape(bram *ram, int32_t in[N]);
 
+int compare_array(int32_t *a, int32_t *b, int bound);
+
 #endif
