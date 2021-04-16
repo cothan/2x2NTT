@@ -273,6 +273,147 @@ int addr_decoder(int addr_in)
     return my_map[addr_in];
 }
 
+void read_fifo(int32_t *fa, int32_t *fb,
+               int32_t *fc, int32_t *fd,
+               const int count, const int mode,
+               const int32_t fifo_a[DEPT_A],
+               const int32_t fifo_b[DEPT_B],
+               const int32_t fifo_c[DEPT_C],
+               const int32_t fifo_d[DEPT_D])
+{
+    if (mode == INVNTT_MODE)
+    {
+        // Serial in Parallel out
+        switch (count & 0b11)
+        {
+        case 0:
+            *fa = fifo_a[DEPT_A - 1];
+            *fb = fifo_a[DEPT_A - 2];
+            *fc = fifo_a[DEPT_A - 3];
+            *fd = fifo_a[DEPT_A - 4];
+            break;
+
+        case 2:
+            *fa = fifo_b[DEPT_B - 1];
+            *fb = fifo_b[DEPT_B - 2];
+            *fc = fifo_b[DEPT_B - 3];
+            *fd = fifo_b[DEPT_B - 4];
+            break;
+        case 1:
+            *fa = fifo_c[DEPT_C - 1];
+            *fb = fifo_c[DEPT_C - 2];
+            *fc = fifo_c[DEPT_C - 3];
+            *fd = fifo_c[DEPT_C - 4];
+            break;
+        case 3:
+            *fa = fifo_d[DEPT_D - 1];
+            *fb = fifo_d[DEPT_D - 2];
+            *fc = fifo_d[DEPT_D - 3];
+            *fd = fifo_d[DEPT_D - 4];
+            break;
+
+        default:
+            printf("Error, suspect overflow\n");
+            break;
+        }
+    }
+    else
+    {
+        // MUL Mode
+        *fa = fifo_a[DEPT_A - 1];
+        *fb = fifo_b[DEPT_B - 3];
+        *fc = fifo_c[DEPT_C - 2];
+        *fd = fifo_d[DEPT_D - 4];
+    }
+}
+
+void read_ram(int32_t *a, int32_t *b, int32_t *c, int32_t *d,
+              const bram *ram, const int ram_i)
+{
+    *a = ram->vec[ram_i].coeffs[0];
+    *b = ram->vec[ram_i].coeffs[1];
+    *c = ram->vec[ram_i].coeffs[2];
+    *d = ram->vec[ram_i].coeffs[3];
+}
+
+void write_ram(bram *ram, const int ram_i,
+               const int32_t a, const int32_t b,
+               const int32_t c, const int32_t d)
+{
+    ram->vec[ram_i].coeffs[0] = a;
+    ram->vec[ram_i].coeffs[1] = b;
+    ram->vec[ram_i].coeffs[2] = c;
+    ram->vec[ram_i].coeffs[3] = d;
+}
+
+void buttefly_circuit(int32_t *a, int32_t *b, 
+                    int32_t *c, int32_t *d,
+                    const int32_t w1, 
+                    const int32_t w2,
+                    const int32_t w3,
+                    const int32_t w4, 
+                    const int mode)
+{
+    int32_t save_a, save_b, save_c, save_d;
+
+    /* For debugging purpose
+    if ((ram_i < 64 || ram_i > 192) && (s > 2))
+    {
+        // index
+        printf("%d, %d | %d\n", ram_i, ram_i + 1, i1);
+        printf("%d, %d | %d\n", ram_i + 2, ram_i + 3, i2);
+        // value
+        printf("%d %d | %d\n", a, b, i1);
+        printf("%d %d | %d\n", c, d, i2);
+    } */
+    save_a = *a; 
+    save_c = *c;
+
+    butterfly(mode, a, b, w1, *a, *b);
+    butterfly(mode, c, d, w2, *c, *d);
+
+    if (mode == MUL_MODE)
+    {
+        // bypass to FIFO
+        // TODO: remove this IF
+        save_b = *b; 
+        save_d = *d;
+    }
+
+    swap(b, c);
+
+    if (mode == MUL_MODE)
+    {
+        // switch lane A -> B, C->D 
+        *b = save_a;
+        *d = save_c;
+    }
+
+    /* For debugging purpose
+    if ((ram_i < 64 || ram_i > 192) && (s > 2))
+    {
+        // index
+        printf("%d, %d | %d\n", ram_i, ram_i + 2, i3);
+        printf("%d, %d | %d\n", ram_i + 1, ram_i + 3, i4);
+        // value
+        printf("%d %d | %d\n", a, b, i3);
+        printf("%d %d | %d\n", c, d, i4);
+        printf("==============================%d %d | %d %d\n", ram_i / 4, ram_i, j, k);
+    } */
+
+    butterfly(mode, a, b, w3, *a, *b);
+    butterfly(mode, c, d, w4, *c, *d);
+
+    if (mode == MUL_MODE)
+    {
+        // switch lane again, B->A, D->C
+        *a = *b; 
+        *c = *d; 
+        *b = save_b;
+        *d = save_d;
+    }
+}
+
 void ntt2x2(bram *ram, bram *mul_ram, int mode, int decode)
 {
     int32_t fifo_i[DEPT_I] = {0},
@@ -282,7 +423,6 @@ void ntt2x2(bram *ram, bram *mul_ram, int mode, int decode)
             fifo_d[DEPT_D] = {0};
     int32_t a, b, c, d;
     int32_t fa, fb, fc, fd, fi;
-    int32_t save_a, save_b, save_c, save_d;
 
     int i1, i2, i3, i4;
     int ram_i, bound, addr;
@@ -297,6 +437,7 @@ void ntt2x2(bram *ram, bram *mul_ram, int mode, int decode)
     int32_t w1, w2, w3, w4;
     
 
+    // TODO: support NTT_MODE
     if (mode == INVNTT_MODE)
     {
         bound = LOG_N;
@@ -355,78 +496,20 @@ void ntt2x2(bram *ram, bram *mul_ram, int mode, int decode)
                 }
                 else{
                     // MUL
-                    w1 = mul_ram->vec[ram_i].coeffs[0];
-                    w2 = mul_ram->vec[ram_i].coeffs[1];
-                    w3 = mul_ram->vec[ram_i].coeffs[2];
-                    w4 = mul_ram->vec[ram_i].coeffs[3];
+                    read_ram(&w1, &w2, &w3, &w4, mul_ram, ram_i);
                 }
 
-                a = ram->vec[ram_i].coeffs[0];
-                b = ram->vec[ram_i].coeffs[1];
-                c = ram->vec[ram_i].coeffs[2];
-                d = ram->vec[ram_i].coeffs[3];
+                read_ram(&a, &b, &c, &d, ram, ram_i);
 
-                /* For debugging purpose
-                if ((ram_i < 64 || ram_i > 192) && (s > 2))
-                {
-                    // index
-                    printf("%d, %d | %d\n", ram_i, ram_i + 1, i1);
-                    printf("%d, %d | %d\n", ram_i + 2, ram_i + 3, i2);
-                    // value
-                    printf("%d %d | %d\n", a, b, i1);
-                    printf("%d %d | %d\n", c, d, i2);
-                } */
-                save_a = a; 
-                save_c = c;
+                // 2x2 circuit
+                buttefly_circuit(&a, &b, &c, &d, w1, w2, w3, w4, mode);
 
-                butterfly(mode, &a, &b, w1, a, b);
-                butterfly(mode, &c, &d, w2, c, d);
-
-                if (mode == MUL_MODE)
-                {
-                    // bypass to FIFO
-                    save_b = b; 
-                    save_d = d;
-                }
-
-                swap(&b, &c);
-
-                if (mode == MUL_MODE)
-                {
-                    // switch lane A -> B, C->D 
-                    b = save_a;
-                    d = save_c;
-                }
-
-                /* For debugging purpose
-                if ((ram_i < 64 || ram_i > 192) && (s > 2))
-                {
-                    // index
-                    printf("%d, %d | %d\n", ram_i, ram_i + 2, i3);
-                    printf("%d, %d | %d\n", ram_i + 1, ram_i + 3, i4);
-                    // value
-                    printf("%d %d | %d\n", a, b, i3);
-                    printf("%d %d | %d\n", c, d, i4);
-                    printf("==============================%d %d | %d %d\n", ram_i / 4, ram_i, j, k);
-                } */
-
-                butterfly(mode, &a, &b, w3, a, b);
-                butterfly(mode, &c, &d, w4, c, d);
-
-                if (mode == MUL_MODE)
-                {
-                    // switch lane again, B->A, D->C
-                    a = b; 
-                    c = d; 
-                    b = save_b;
-                    d = save_d;
-                }
-
+                // FIFO 
+                FIFO(DEPT_A, fifo_a, a);
+                FIFO(DEPT_B, fifo_b, b);
+                FIFO(DEPT_C, fifo_c, c);
+                FIFO(DEPT_D, fifo_d, d);
                 fi = FIFO(DEPT_I, fifo_i, ram_i);
-                fa = FIFO(DEPT_A, fifo_a, a);
-                fb = FIFO(DEPT_B, fifo_b, b);
-                fc = FIFO(DEPT_C, fifo_c, c);
-                fd = FIFO(DEPT_D, fifo_d, d);
 
                 if (count == DEPT_I)
                 {
@@ -441,54 +524,9 @@ void ntt2x2(bram *ram, bram *mul_ram, int mode, int decode)
 
                 if (write)
                 {
-                    if (mode == INVNTT_MODE)
-                    {
-                        // Serial in Parallel out
-                        switch (count & 0b11)
-                        {
-                        case 0:
-                            fa = fifo_a[DEPT_A - 1];
-                            fb = fifo_a[DEPT_A - 2];
-                            fc = fifo_a[DEPT_A - 3];
-                            fd = fifo_a[DEPT_A - 4];
-                            break;
-
-                        case 2:
-                            fa = fifo_b[DEPT_B - 1];
-                            fb = fifo_b[DEPT_B - 2];
-                            fc = fifo_b[DEPT_B - 3];
-                            fd = fifo_b[DEPT_B - 4];
-                            break;
-                        case 1:
-                            fa = fifo_c[DEPT_C - 1];
-                            fb = fifo_c[DEPT_C - 2];
-                            fc = fifo_c[DEPT_C - 3];
-                            fd = fifo_c[DEPT_C - 4];
-                            break;
-                        case 3:
-                            fa = fifo_d[DEPT_D - 1];
-                            fb = fifo_d[DEPT_D - 2];
-                            fc = fifo_d[DEPT_D - 3];
-                            fd = fifo_d[DEPT_D - 4];
-                            break;
-
-                        default:
-                            printf("Error, suspect overflow\n");
-                            break;
-                        }
-                    }
-                    else{
-                        // MUL Mode 
-                        fa = fifo_a[DEPT_A-1];
-                        fb = fifo_b[DEPT_B-3];
-                        fc = fifo_c[DEPT_C-2];
-                        fd = fifo_d[DEPT_D-4];
-                    }
-
-                    ram->vec[fi].coeffs[0] = fa;
-                    ram->vec[fi].coeffs[1] = fb;
-                    ram->vec[fi].coeffs[2] = fc;
-                    ram->vec[fi].coeffs[3] = fd;
+                    read_fifo(&fa, &fb, &fc, &fd, count, mode, fifo_a, fifo_b, fifo_c, fifo_d);
+                    write_ram(ram, fi, fa, fb, fc, fd);
+                    
                     // writeback
                     // printf("[%d] <= (%d, %d, %d, %d)\n", fi, fa, fb, fc, fd);
                 }
@@ -515,55 +553,8 @@ void ntt2x2(bram *ram, bram *mul_ram, int mode, int decode)
         fd = FIFO(DEPT_D, fifo_d, 0);
         count++;
 
-        if (mode == INVNTT_MODE)
-        {
-            // Serial in Parallel out
-            switch (count & 0b11)
-            {
-            case 0:
-                fa = fifo_a[DEPT_A - 1];
-                fb = fifo_a[DEPT_A - 2];
-                fc = fifo_a[DEPT_A - 3];
-                fd = fifo_a[DEPT_A - 4];
-                break;
-
-            case 2:
-                fa = fifo_b[DEPT_B - 1];
-                fb = fifo_b[DEPT_B - 2];
-                fc = fifo_b[DEPT_B - 3];
-                fd = fifo_b[DEPT_B - 4];
-                break;
-            case 1:
-                fa = fifo_c[DEPT_C - 1];
-                fb = fifo_c[DEPT_C - 2];
-                fc = fifo_c[DEPT_C - 3];
-                fd = fifo_c[DEPT_C - 4];
-                break;
-            case 3:
-                fa = fifo_d[DEPT_D - 1];
-                fb = fifo_d[DEPT_D - 2];
-                fc = fifo_d[DEPT_D - 3];
-                fd = fifo_d[DEPT_D - 4];
-                break;
-
-            default:
-                printf("Error, suspect overflow\n");
-                break;
-            }
-        }
-        else{
-            // MUL Mode 
-            fa = fifo_a[DEPT_A-1];
-            fb = fifo_b[DEPT_B-3];
-            fc = fifo_c[DEPT_C-2];
-            fd = fifo_d[DEPT_D-4];
-        }
-
-        ram->vec[fi].coeffs[0] = fa;
-        ram->vec[fi].coeffs[1] = fb;
-        ram->vec[fi].coeffs[2] = fc;
-        ram->vec[fi].coeffs[3] = fd;
-
+        read_fifo(&fa, &fb, &fc, &fd, count, mode, fifo_a, fifo_b, fifo_c, fifo_d);
+        write_ram(ram, fi, fa, fb, fc, fd);
         // writeback
         // printf("[%d] <= (%d, %d, %d, %d)\n", fi, fa, fb, fc, fd);
     }
@@ -576,7 +567,7 @@ void ntt2x2(bram *ram, bram *mul_ram, int mode, int decode)
     */
 }
 
-int ntt2x2_NTT(int32_t r_gold[N], int32_t r[N])
+int ntt2x2_INVNTT(int32_t r_gold[N], int32_t r[N])
 {
     bram ram, mul_ram;
     // Load data into BRAM, 4 coefficients per line
@@ -611,18 +602,14 @@ int ntt2x2_NTT(int32_t r_gold[N], int32_t r[N])
         d = r_gold[i + 3];
 
         addr = addr_decoder( i / 4 );
-        ta = ram.vec[addr].coeffs[0];
-        tb = ram.vec[addr].coeffs[1];
-        tc = ram.vec[addr].coeffs[2];
-        td = ram.vec[addr].coeffs[3];
-
+        read_ram(&ta, &tb, &tc, &td, &ram, addr);
         // Comapre with reference code
 
         // Quick xor, I hate long if-else clause
-        ret |= a ^ ta;
-        ret |= b ^ tb;
-        ret |= c ^ tc;
-        ret |= d ^ td;
+        ret |= a != ta;
+        ret |= b != tb;
+        ret |= c != tc;
+        ret |= d != td;
 
         if (ret)
         {
@@ -632,7 +619,7 @@ int ntt2x2_NTT(int32_t r_gold[N], int32_t r[N])
             return 1;
         }
     }
-    printf("==============NTT is Correct!\n\n");
+    printf("==============INV_NTT is Correct!\n\n");
     return 0;
 }
 
@@ -671,18 +658,15 @@ int ntt2x2_MUL(int32_t r_gold[N], int32_t r[N])
         d = r_gold[i + 3];
 
         addr = i / 4;
-        ta = ram.vec[addr].coeffs[0];
-        tb = ram.vec[addr].coeffs[1];
-        tc = ram.vec[addr].coeffs[2];
-        td = ram.vec[addr].coeffs[3];
-
+        read_ram(&ta, &tb, &tc, &td, &ram, addr);
+        
         // Comapre with reference code
 
         // Quick xor, I hate long if-else clause
-        ret |= a ^ ta;
-        ret |= b ^ tb;
-        ret |= c ^ tc;
-        ret |= d ^ td;
+        ret |= a != ta;
+        ret |= b != tb;
+        ret |= c != tc;
+        ret |= d != td;
 
         if (ret)
         {
@@ -696,7 +680,7 @@ int ntt2x2_MUL(int32_t r_gold[N], int32_t r[N])
     return 0;
 }
 
-#define TESTS 1
+#define TESTS 10
 
 int main()
 {
@@ -720,7 +704,7 @@ int main()
             r_copy[i] = t2;
         }
 
-        ret |= ntt2x2_NTT(r_gold, r);
+        ret |= ntt2x2_INVNTT(r_gold, r);
         ret |= ntt2x2_MUL(r_gold_copy, r_copy);
 
         if (ret)
@@ -729,13 +713,14 @@ int main()
         }
     }
 
-    ntt(r_gold);
+    // ntt(r_gold);
 
     if (ret)
     {
         printf("ERROR\n");
     }
-    else{
+    else
+    {
       printf("OK\n");
     }
 
