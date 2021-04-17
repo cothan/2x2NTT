@@ -258,7 +258,7 @@ void butterfly(int mode, int32_t *bj, int32_t *bjlen, const int32_t zeta, int32_
 /* Lazy, avoid transpose the matrix */
 int addr_decoder(int addr_in)
 {
-    /* 
+    /* For Inverse NTT
     [ 0  4  8 12] <= [  0* 1  2  3 ]
     [16 20 24 28] <= [  4  5  6  7 ]
     [32 36 40 44] <= [  8  9 10 11 ]
@@ -294,35 +294,36 @@ void read_fifo(int32_t *fa, int32_t *fb,
                const int32_t fifo_c[DEPT_C],
                const int32_t fifo_d[DEPT_D])
 {
+    static int32_t ta, tb, tc, td;
     if (mode == INVNTT_MODE)
     {
         // Serial in Parallel out
         switch (count & 0b11)
         {
         case 0:
-            *fa = fifo_a[DEPT_A - 1];
-            *fb = fifo_a[DEPT_A - 2];
-            *fc = fifo_a[DEPT_A - 3];
-            *fd = fifo_a[DEPT_A - 4];
+            ta = fifo_a[DEPT_A - 1];
+            tb = fifo_a[DEPT_A - 2];
+            tc = fifo_a[DEPT_A - 3];
+            td = fifo_a[DEPT_A - 4];
             break;
 
         case 2:
-            *fa = fifo_b[DEPT_B - 1];
-            *fb = fifo_b[DEPT_B - 2];
-            *fc = fifo_b[DEPT_B - 3];
-            *fd = fifo_b[DEPT_B - 4];
+            ta = fifo_b[DEPT_B - 1];
+            tb = fifo_b[DEPT_B - 2];
+            tc = fifo_b[DEPT_B - 3];
+            td = fifo_b[DEPT_B - 4];
             break;
         case 1:
-            *fa = fifo_c[DEPT_C - 1];
-            *fb = fifo_c[DEPT_C - 2];
-            *fc = fifo_c[DEPT_C - 3];
-            *fd = fifo_c[DEPT_C - 4];
+            ta = fifo_c[DEPT_C - 1];
+            tb = fifo_c[DEPT_C - 2];
+            tc = fifo_c[DEPT_C - 3];
+            td = fifo_c[DEPT_C - 4];
             break;
         case 3:
-            *fa = fifo_d[DEPT_D - 1];
-            *fb = fifo_d[DEPT_D - 2];
-            *fc = fifo_d[DEPT_D - 3];
-            *fd = fifo_d[DEPT_D - 4];
+            ta = fifo_d[DEPT_D - 1];
+            tb = fifo_d[DEPT_D - 2];
+            tc = fifo_d[DEPT_D - 3];
+            td = fifo_d[DEPT_D - 4];
             break;
 
         default:
@@ -333,11 +334,16 @@ void read_fifo(int32_t *fa, int32_t *fb,
     else
     {
         // MUL Mode
-        *fa = fifo_a[DEPT_A - 1];
-        *fb = fifo_b[DEPT_B - 3];
-        *fc = fifo_c[DEPT_C - 2];
-        *fd = fifo_d[DEPT_D - 4];
+        ta = fifo_a[DEPT_A - 1];
+        tb = fifo_b[DEPT_B - 3];
+        tc = fifo_c[DEPT_C - 2];
+        td = fifo_d[DEPT_D - 4];
     }
+
+    *fa = ta;
+    *fb = tb;
+    *fc = tc;
+    *fd = td;
 }
 
 void read_ram(int32_t *a, int32_t *b, int32_t *c, int32_t *d,
