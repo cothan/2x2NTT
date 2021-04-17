@@ -354,7 +354,17 @@ void buttefly_circuit(int32_t *a, int32_t *b,
                     const int32_t w4, 
                     const int mode)
 {
-    int32_t save_a, save_b, save_c, save_d;
+    // 4 pipeline stages
+    static int32_t save_a, save_b, save_c, save_d;
+    static int32_t a0, b0, c0, d0;
+    static int32_t a1, b1, c1, d1;
+    static int32_t a2, b2, c2, d2;
+    static int32_t a3, b3, c3, d3;
+
+    a0 = *a;
+    b0 = *b;
+    c0 = *c;
+    d0 = *d;
 
     /* For debugging purpose
     if ((ram_i < 64 || ram_i > 192) && (s > 2))
@@ -366,27 +376,34 @@ void buttefly_circuit(int32_t *a, int32_t *b,
         printf("%d %d | %d\n", a, b, i1);
         printf("%d %d | %d\n", c, d, i2);
     } */
-    save_a = *a; 
-    save_c = *c;
+    save_a = a0; 
+    save_c = c0;
 
-    butterfly(mode, a, b, w1, *a, *b);
-    butterfly(mode, c, d, w2, *c, *d);
+    butterfly(mode, &a1, &b1, w1, a0, b0);
+    butterfly(mode, &c1, &d1, w2, c0, d0);
 
     if (mode == MUL_MODE)
     {
         // bypass to FIFO
         // TODO: remove this IF
-        save_b = *b; 
-        save_d = *d;
+        save_b = b1; 
+        save_d = d1;
     }
 
-    swap(b, c);
+    // swap(&b1, &c1);
+    a2 = a1;
+    c2 = b1;
 
     if (mode == MUL_MODE)
     {
         // switch lane A -> B, C->D 
-        *b = save_a;
-        *d = save_c;
+        b2 = save_a;
+        d2 = save_c;
+    }
+    else
+    {
+        b2 = c1;
+        d2 = d1;
     }
 
     /* For debugging purpose
@@ -401,16 +418,24 @@ void buttefly_circuit(int32_t *a, int32_t *b,
         printf("==============================%d %d | %d %d\n", ram_i / 4, ram_i, j, k);
     } */
 
-    butterfly(mode, a, b, w3, *a, *b);
-    butterfly(mode, c, d, w4, *c, *d);
+    butterfly(mode, &a3, &b3, w3, a2, b2);
+    butterfly(mode, &c3, &d3, w4, c2, d2);
 
     if (mode == MUL_MODE)
     {
         // switch lane again, B->A, D->C
-        *a = *b; 
-        *c = *d; 
+        *a = b3; 
         *b = save_b;
+        *c = d3; 
         *d = save_d;
+    }
+    else
+    {
+        // NTT Mode
+        *a = a3; 
+        *b = b3;
+        *c = c3; 
+        *d = d3;
     }
 }
 
@@ -547,10 +572,10 @@ void ntt2x2(bram *ram, bram *mul_ram, int mode, int decode)
     for (int i = 0; i < DEPT_I; i++)
     {
         fi = FIFO(DEPT_I, fifo_i, 0);
-        fa = FIFO(DEPT_A, fifo_a, 0);
-        fb = FIFO(DEPT_B, fifo_b, 0);
-        fc = FIFO(DEPT_C, fifo_c, 0);
-        fd = FIFO(DEPT_D, fifo_d, 0);
+        FIFO(DEPT_A, fifo_a, 0);
+        FIFO(DEPT_B, fifo_b, 0);
+        FIFO(DEPT_C, fifo_c, 0);
+        FIFO(DEPT_D, fifo_d, 0);
         count++;
 
         read_fifo(&fa, &fb, &fc, &fd, count, mode, fifo_a, fifo_b, fifo_c, fifo_d);
@@ -558,7 +583,7 @@ void ntt2x2(bram *ram, bram *mul_ram, int mode, int decode)
         // writeback
         // printf("[%d] <= (%d, %d, %d, %d)\n", fi, fa, fb, fc, fd);
     }
-    /* For debugging purpose 
+    /* // For debugging purpose 
     print_array(fifo_i, DEPT_I, "fifo_i");
     print_array(fifo_a, DEPT_A, "fifo_a");
     print_array(fifo_b, DEPT_B, "fifo_b");
@@ -684,8 +709,8 @@ int ntt2x2_MUL(int32_t r_gold[N], int32_t r[N])
 
 int main()
 {
-    // srand(time(0));
-    srand(0);
+    srand(time(0));
+    // srand(0);
     int32_t r[N], r_gold[N], r_gold_copy[N], r_copy[N];
     int32_t t1, t2;
     int ret = 0;
