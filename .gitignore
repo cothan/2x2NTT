@@ -61,3 +61,6 @@ test_func/test_ntt_dit_dif
 *.json
 *.pyc
 dilithium/ntt2x2
+dilithium/.gdb_history
+dilithium/ntt_test
+dilithium/test
