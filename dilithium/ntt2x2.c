@@ -184,12 +184,14 @@ void swap(int32_t *a, int32_t *b)
 
 void butterfly(int mode, int32_t *bj, int32_t *bjlen, const int32_t zeta, int32_t aj, int32_t ajlen)
 {
-    int32_t t;
-
-    int32_t aj_copy, ajlen_copy;
-    aj_copy = aj;
-    ajlen_copy = ajlen;
-
+    static int32_t aj1, ajlen1;
+    static int32_t aj2, ajlen2;
+    static int32_t aj3, ajlen3;
+    static int32_t aj4, ajlen4;
+    
+    aj1 = aj;
+    ajlen1 = ajlen;
+    
     if (mode == INVNTT_MODE)
     {
         /* This code copied from butterfly unit in Dilithium Inverse NTT
@@ -198,13 +200,19 @@ void butterfly(int mode, int32_t *bj, int32_t *bjlen, const int32_t zeta, int32_
         a[j + len] = t - a[j + len];
         a[j + len] = montgomery_reduce((int64_t)zeta * a[j + len]); */
         // INV_NTT
-        t = aj;
-        aj = t + ajlen;
-        ajlen = t - ajlen;
+        aj2 = aj1 + ajlen1;
+        ajlen2 = aj1 - ajlen1;
     }
+    else
+    {
+        aj2 = aj1;
+        ajlen2 = ajlen1;
+    }
+
     // MUL
     // t = ajlen = montgomery_reduce((int64_t)zeta * ajlen);
-    t = ajlen = ((int64_t)zeta * ajlen) % Q;
+    ajlen3 = ((int64_t)zeta * ajlen2) % Q;
+    aj3 = aj2;
     
     if (mode == NTT_MODE)
     {
@@ -213,8 +221,13 @@ void butterfly(int mode, int32_t *bj, int32_t *bjlen, const int32_t zeta, int32_
         a[j + len] = a[j] - t;
         a[j] = a[j] + t; */
         // NTT
-        ajlen = aj_copy - t;
-        aj = aj_copy + t;
+        ajlen4 = aj3 - ajlen3;
+        aj4 = aj3 + ajlen3;
+    }
+    else
+    {
+        ajlen4 = ajlen3;
+        aj4 = aj3;
     }
 
     if (mode == INVNTT_MODE)
@@ -238,8 +251,8 @@ void butterfly(int mode, int32_t *bj, int32_t *bjlen, const int32_t zeta, int32_
       // }
     }
 
-    *bj = aj;
-    *bjlen = ajlen;
+    *bj = aj4;
+    *bjlen = ajlen4;
 }
 
 /* Lazy, avoid transpose the matrix */
