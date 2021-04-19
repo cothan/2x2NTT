@@ -18,4 +18,6 @@ typedef struct
 
 void ntt2x2(bram *ram, bram *mul_ram, enum OPERATION mode, enum MAPPING decode);
 
+void forward_ntt2x2(bram *ram, bram *mul_ram, enum OPERATION mode, enum MAPPING decode);
+
 #endif

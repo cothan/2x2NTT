@@ -15,14 +15,36 @@
  * Inverse NTT Test, this function give correct result as in reference Inverse NTT 
  * Support divide by 2. Correct. Verified. 
  */
-int ntt2x2_INVNTT(int32_t r_gold[DILITHIUM_N])
+int ntt2x2_NTT(int32_t r_gold[DILITHIUM_N])
 {
-    bram ram, mul_ram;
+    bram ram;
     // Load data into BRAM, 4 coefficients per line
     reshape(&ram, r_gold);
-    reshape(&mul_ram, MUL_RAM_barret);
     // Compute NTT
-    ntt2x2(&ram, &mul_ram, INVERSE_NTT_MODE, DECODE_FALSE);
+    forward_ntt2x2(&ram, 0, FORWARD_NTT_MODE, ENCODE_FALSE);
+
+    // Run the reference code
+    ntt(r_gold);
+
+    // print_array(r_gold, 256, "r_gold");
+    // print_reshaped_array(&ram, 64, "ram");
+
+    int ret = compare_bram_array(&ram, r_gold, "ntt2x2_NTT", ENCODE_TRUE, 0);
+
+    return ret;
+}
+
+/* 
+ * Inverse NTT Test, this function give correct result as in reference Inverse NTT 
+ * Support divide by 2. Correct. Verified. 
+ */
+int ntt2x2_INVNTT(int32_t r_gold[DILITHIUM_N])
+{
+    bram ram;
+    // Load data into BRAM, 4 coefficients per line
+    reshape(&ram, r_gold);
+    // Compute NTT
+    ntt2x2(&ram, 0, INVERSE_NTT_MODE, DECODE_FALSE);
 
     // Run the reference code
     invntt_tomont(r_gold);
@@ -68,30 +90,37 @@ int main()
 {
     // srand(time(0));
     srand(0);
-    int32_t r_ntt[DILITHIUM_N], r_mul[DILITHIUM_N], test_ram[DILITHIUM_N];
-    int32_t t1, t2, t3;
+    int32_t r_invntt[DILITHIUM_N], 
+            r_mul[DILITHIUM_N], 
+            test_ram[DILITHIUM_N], 
+            r_ntt[DILITHIUM_N];
+    int32_t t1, t2, t3, t4;
     int ret = 1;
 
     for (int k = 0; k < TESTS; k++)
     {
         for (int i = 0; i < DILITHIUM_N; i++)
         {
-            t1 = i+123;
-            // t1 = rand() % DILITHIUM_Q;
-            r_ntt[i] = t1;
+            // t1 = i;
+            t1 = rand() % DILITHIUM_Q;
+            r_invntt[i] = t1;
 
             t2 = rand() % DILITHIUM_Q;
             r_mul[i] = t2;
 
             t3 = rand() % DILITHIUM_Q;
             test_ram[i] = t3;
+
+            t4 = i; 
+            r_ntt[i] = t4;
         }
 
         (void) test_ram;
         (void) r_mul;
         (void) r_ntt;
-        ret &= ntt2x2_INVNTT(r_ntt);
+        ret &= ntt2x2_INVNTT(r_invntt);
         ret &= ntt2x2_MUL(r_mul, test_ram);
+        ret &= ntt2x2_NTT(r_ntt);
 
         if (ret)
         {

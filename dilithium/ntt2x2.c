@@ -169,3 +169,124 @@ void ntt2x2(bram *ram, bram *mul_ram, enum OPERATION mode, enum MAPPING decode)
     print_array(fifo_d, DEPT_D, "fifo_d"); 
     */
 }
+
+
+#define DEPT_W 4
+
+void forward_ntt2x2(bram *ram, bram *mul_ram, enum OPERATION mode, enum MAPPING decode)
+{
+    int32_t fifo_i[DEPT_W] = {0},
+            fifo_a[DEPT_A] = {0},
+            fifo_b[DEPT_B] = {0},
+            fifo_c[DEPT_C] = {0},
+            fifo_d[DEPT_D] = {0},
+            fifo_w[DEPT_W] = {0};
+
+    int32_t fa, fb, fc, fd, fi, fw;
+
+    // int i1, i2, i3, i4;
+    int ram_i, bound, addr;
+
+    int count = 0;
+
+    // --------------------
+    int s_array[4] = {4, 2, 0, 4};
+    int start_ntt = 0;
+    // int32_t a, b, c, d;
+    // a = -1;
+    // b = -1;
+    // c = -1;
+    // d = -1;
+    // --------------------
+
+    switch (mode)
+    {
+    case MUL_MODE:
+        bound = 1;
+        break;
+
+    case INVERSE_NTT_MODE:
+        bound = DILITHIUM_LOGN;
+        break;
+
+    case FORWARD_NTT_MODE:
+        bound = DILITHIUM_LOGN;
+        printf("FOFWARD NTT is not ready\n");
+        break;
+
+    default:
+        printf("Error: MODE is wrong\n");
+        bound = 0;
+        break;
+    }
+
+    (void) mul_ram;
+    (void) fw; 
+    (void) fi;
+    (void) decode;
+
+    for (int si = 0; si < bound; ++si)
+    {
+        for (int j = 0; j < 1 << s_array[si]; j++)
+        {
+            for (int k = 0; j < DILITHIUM_N / 4; j += 1 << s_array[si])
+            {
+                
+                // Load then store to FIFO
+                addr = k + j;
+
+                ram_i = addr;
+
+                fa = FIFO(DEPT_A, fifo_a, -1);
+                fb = FIFO(DEPT_B, fifo_b, -1);
+                fc = FIFO(DEPT_C, fifo_c, -1);
+                fd = FIFO(DEPT_D, fifo_d, -1);
+                // fi = FIFO(DEPT_W, fifo_i, -1);
+                // fw = FIFO(DEPT_W, fifo_w, -1);
+
+                write_fifo(fifo_a, fifo_b, fifo_c, fifo_d, count, ram, ram_i);
+
+                start_ntt = count == DEPT_W;
+                
+                count++;
+                
+
+                // Compute
+
+                if (start_ntt)
+                {
+                    printf("%d, %d, %d, %d\n", fa, fb, fc, fd);
+                    printf("--------\n");
+                }
+
+                // printf("w: %2d - %2d - %2d - %2d\n", i1, i2, i3, i4);
+
+                print_array(fifo_d, DEPT_D, "FIFO_A");
+                print_array(fifo_c, DEPT_C, "FIFO_B");
+                print_array(fifo_b, DEPT_B, "FIFO_C");
+                print_array(fifo_a, DEPT_A, "FIFO_D");
+                print_array(fifo_i, DEPT_W, "FIFO_I");
+                print_array(fifo_w, DEPT_W, "FIFO_W");
+                printf("--------%d\n", ram_i);
+
+                // printf("=====================\n\n");
+            }
+        }
+    }
+
+    // for (int i = 0; i < DEPT_I+1; i++)
+    // {
+    //     printf("=====END\n");
+    //     move_fifo(&fa, &fb, &fc, &fd, &fi, &fw,
+    //                 fifo_a, fifo_b, fifo_c, fifo_d, 
+    //                 fifo_i, ram_i, fifo_w, w);
+    //     printf("%d, %d, %d, %d\n", fa, fb, fc, fd);
+
+
+    //     // print_array(fifo_d, DEPT_D, "FIFO_A");
+    //     // print_array(fifo_c, DEPT_C, "FIFO_B");
+    //     // print_array(fifo_b, DEPT_B, "FIFO_C");
+    //     // print_array(fifo_a, DEPT_A, "FIFO_D");
+    //     printf("--------%d\n", ram_i);
+    // }
+}

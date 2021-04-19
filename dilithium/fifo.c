@@ -4,7 +4,8 @@
 #include "params.h"
 #include "ntt2x2.h"
 
-// This function will output an element when insert 1 element
+/* This function will output an element when insert 1 element
+ */
 int32_t FIFO(const int dept, int32_t *fifo, const int32_t new_value)
 {
     int32_t out = fifo[dept - 1];
@@ -13,6 +14,23 @@ int32_t FIFO(const int dept, int32_t *fifo, const int32_t new_value)
         fifo[i] = fifo[i - 1];
     }
     fifo[0] = new_value;
+
+    return out;
+}
+
+/* Parallel in, serial out: This function receive 4 elements at the begin of FIFO. 
+ */
+int32_t PISO(const int dept, int32_t *fifo, const int32_t *line)
+{
+    int32_t out = fifo[dept - 1];
+    for (int i = dept - 1; i > 3; i--)
+    {
+        fifo[i] = fifo[i - 1];
+    }
+    fifo[3] = line[0];
+    fifo[2] = line[1];
+    fifo[1] = line[2];
+    fifo[0] = line[3];
 
     return out;
 }
@@ -83,10 +101,10 @@ void write_fifo(int32_t fifo_a[DEPT_A], int32_t fifo_b[DEPT_B],
                 const bram *ram, const int index)
 {
     int32_t a, b, c, d;
-    d = ram->vec[index].coeffs[0];
-    c = ram->vec[index].coeffs[1];
-    b = ram->vec[index].coeffs[2];
-    a = ram->vec[index].coeffs[3];
+    a = ram->vec[index].coeffs[0];
+    b = ram->vec[index].coeffs[1];
+    c = ram->vec[index].coeffs[2];
+    d = ram->vec[index].coeffs[3];
     switch (count & 3)
     {
     case 0:
