@@ -9,7 +9,7 @@ void butterfly(int mode, int32_t *bj, int32_t *bjlen, const int32_t zeta,
     static int32_t aj2, ajlen2;
     static int32_t aj3, ajlen3;
     static int32_t aj4, ajlen4;
-    // static int32_t aj5, ajlen5;
+    static int32_t aj5, ajlen5;
 
     aj1 = aj;
     ajlen1 = ajlen;
@@ -52,34 +52,34 @@ void butterfly(int mode, int32_t *bj, int32_t *bjlen, const int32_t zeta,
         aj4 = aj3;
     }
 
-    // if (mode == INVERSE_NTT_MODE)
-    // {
-    //     if (aj4 & 1)
-    //     {
-    //       aj5 = (aj4 >> 1) + (DILITHIUM_Q + 1) / 2;
-    //     }
-    //     else
-    //     {
-    //       aj5 = (aj4 >> 1);
-    //     }
+    if (mode == INVERSE_NTT_MODE)
+    {
+        if (aj4 & 1)
+        {
+          aj5 = (aj4 >> 1) + (DILITHIUM_Q + 1) / 2;
+        }
+        else
+        {
+          aj5 = (aj4 >> 1);
+        }
 
-    //     if (ajlen4 & 1)
-    //     {
-    //       ajlen5 = (ajlen4 >> 1) + (DILITHIUM_Q + 1) / 2;
-    //     }
-    //     else
-    //     {
-    //       ajlen5 = (ajlen4 >> 1);
-    //     }
-    // }
-    // else
-    // {
-    //     aj5 = aj4;
-    //     ajlen5 = ajlen4;
-    // }
+        if (ajlen4 & 1)
+        {
+          ajlen5 = (ajlen4 >> 1) + (DILITHIUM_Q + 1) / 2;
+        }
+        else
+        {
+          ajlen5 = (ajlen4 >> 1);
+        }
+    }
+    else
+    {
+        aj5 = aj4;
+        ajlen5 = ajlen4;
+    }
 
-    *bj = aj4;
-    *bjlen = ajlen4;
+    *bj = (aj5 < 0) ? aj5 += DILITHIUM_Q : aj5;
+    *bjlen = (ajlen5 < 0) ? ajlen5 += DILITHIUM_Q : ajlen5;
 }
 
 void buttefly_circuit(int32_t *a, int32_t *b,

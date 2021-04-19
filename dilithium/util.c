@@ -63,16 +63,16 @@ int compare_bram_array(bram *ram, int32_t array[DILITHIUM_N], const char *string
 {
     int32_t a, b, c, d;
     int32_t ta, tb, tc, td;
-    // int ret = 1;
+    int ret = 0;
     int addr;
 
     for (int i = 0; i < DILITHIUM_N; i += 4)
     {
         // Get golden result
-        a = array[i + 0];
-        b = array[i + 1];
-        c = array[i + 2];
-        d = array[i + 3];
+        a = (array[i + 0] + DILITHIUM_Q) % DILITHIUM_Q;
+        b = (array[i + 1] + DILITHIUM_Q) % DILITHIUM_Q;
+        c = (array[i + 2] + DILITHIUM_Q) % DILITHIUM_Q;
+        d = (array[i + 3] + DILITHIUM_Q) % DILITHIUM_Q;
 
         addr = i / 4;
         if (print_out) printf("%d: %d, %d %d, %d\n", addr, a, b, c, d);
@@ -83,6 +83,11 @@ int compare_bram_array(bram *ram, int32_t array[DILITHIUM_N], const char *string
         if (print_out) print_index_reshaped_array(ram, addr);
         read_ram(&ta, &tb, &tc, &td, ram, addr);
 
+        ta = ta % DILITHIUM_Q;
+        tb = tb % DILITHIUM_Q;
+        tc = tc % DILITHIUM_Q;
+        td = td % DILITHIUM_Q;
+
         // Quick xor, I hate long if-else clause
 
         if ( (ta != a) || (tb != b) || (tc != c) || (td != d) )
@@ -90,8 +95,13 @@ int compare_bram_array(bram *ram, int32_t array[DILITHIUM_N], const char *string
             printf("%s Error at index: %d => %d\n", string, addr, i);
             printf("%12d | %12d | %12d | %12d\n", a, b, c, d);
             printf("%12d | %12d | %12d | %12d\n", ta, tb, tc, td);
-            return 1;
+            ret = 1;
+            // return 1;
         }
+    }
+    if (ret)
+    {
+        return 1;
     }
     return 0;
 }

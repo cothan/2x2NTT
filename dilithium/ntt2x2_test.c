@@ -13,7 +13,7 @@
 
 /* 
  * Inverse NTT Test, this function give correct result as in reference Inverse NTT 
- * TODO: remove multiply with n^-1 by adding support divide by 2.
+ * Support divide by 2. Correct. Verified. 
  */
 int ntt2x2_INVNTT(int32_t r_gold[DILITHIUM_N])
 {
@@ -23,9 +23,6 @@ int ntt2x2_INVNTT(int32_t r_gold[DILITHIUM_N])
     reshape(&mul_ram, MUL_RAM_barret);
     // Compute NTT
     ntt2x2(&ram, &mul_ram, INVERSE_NTT_MODE, DECODE_FALSE);
-
-    // Enable DECODE_TRUE only after NTT transform
-    ntt2x2(&ram, &mul_ram, MUL_MODE, DECODE_TRUE);
 
     // Run the reference code
     invntt_tomont(r_gold);
@@ -69,8 +66,8 @@ int ntt2x2_MUL(int32_t r_mul[DILITHIUM_N], int32_t test_ram[DILITHIUM_N])
 
 int main()
 {
-    srand(time(0));
-    // srand(0);
+    // srand(time(0));
+    srand(0);
     int32_t r_ntt[DILITHIUM_N], r_mul[DILITHIUM_N], test_ram[DILITHIUM_N];
     int32_t t1, t2, t3;
     int ret = 1;
