@@ -128,7 +128,7 @@ void buttefly_circuit(u24 *a, u24 *b, u24 *c, u24 *d,
     if (mode == MUL_MODE)
     {
         // switch lane A -> B, C->D
-        b2 = a2;
+        b2 = a1;
         d2 = c1;
     }
     else
