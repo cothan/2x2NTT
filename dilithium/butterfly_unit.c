@@ -9,6 +9,7 @@ void butterfly(int mode, int32_t *bj, int32_t *bjlen, const int32_t zeta,
     static int32_t aj2, ajlen2;
     static int32_t aj3, ajlen3;
     static int32_t aj4, ajlen4;
+    // static int32_t aj5, ajlen5;
 
     aj1 = aj;
     ajlen1 = ajlen;
@@ -53,23 +54,28 @@ void butterfly(int mode, int32_t *bj, int32_t *bjlen, const int32_t zeta,
 
     if (mode == INVERSE_NTT_MODE)
     {
-        // if (aj & 1)
+        // if (aj4 & 1)
         // {
-        //   aj = (aj >> 1) + (Q + 1) / 2;
+        //   aj4 = (aj4 >> 1) + (DILITHIUM_Q + 1) / 2;
         // }
         // else
         // {
-        //   aj = (aj >> 1);
+        //   aj4 = (aj4 >> 1);
         // }
 
-        // if (ajlen & 1)
+        // if (ajlen4 & 1)
         // {
-        //   ajlen = (ajlen >> 1) + (Q + 1) / 2;
+        //   ajlen4 = (ajlen4 >> 1) + (DILITHIUM_Q + 1) / 2;
         // }
         // else
         // {
-        //   ajlen = (ajlen >> 1);
+        //   ajlen4 = (ajlen4 >> 1);
         // }
+    }
+    else
+    {
+        // aj5 = aj4;
+        // ajlen5 = ajlen4;
     }
 
     *bj = aj4;
