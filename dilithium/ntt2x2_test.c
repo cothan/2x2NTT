@@ -11,6 +11,10 @@
 #include "ntt.h"
 #include "util.h"
 
+/* 
+ * Inverse NTT Test, this function give correct result as in reference Inverse NTT 
+ * TODO: remove multiply with n^-1 by adding support divide by 2.
+ */
 int ntt2x2_INVNTT(int32_t r_gold[DILITHIUM_N])
 {
     bram ram, mul_ram;
@@ -21,19 +25,23 @@ int ntt2x2_INVNTT(int32_t r_gold[DILITHIUM_N])
     ntt2x2(&ram, &mul_ram, INVERSE_NTT_MODE, DECODE_FALSE);
 
     // Enable DECODE_TRUE only after NTT transform
-    // ntt2x2(&ram, &mul_ram, MUL_MODE, DECODE_TRUE);
+    ntt2x2(&ram, &mul_ram, MUL_MODE, DECODE_TRUE);
 
     // Run the reference code
     invntt_tomont(r_gold);
 
-    print_array(r_gold, 256, "r_gold");
-    print_reshaped_array(&ram, 64, "ram");
+    // print_array(r_gold, 256, "r_gold");
+    // print_reshaped_array(&ram, 64, "ram");
 
-    int ret = compare_bram_array(&ram, r_gold, "ntt2x2_INVNTT");
+    int ret = compare_bram_array(&ram, r_gold, "ntt2x2_INVNTT", DECODE_TRUE, 1);
 
     return ret;
 }
 
+/* 
+ * Multiplier between two memory test.
+ * Correct, verified, optimized. 
+ */
 int ntt2x2_MUL(int32_t r_mul[DILITHIUM_N], int32_t test_ram[DILITHIUM_N])
 {
     // Compare with the reference code
@@ -51,7 +59,7 @@ int ntt2x2_MUL(int32_t r_mul[DILITHIUM_N], int32_t test_ram[DILITHIUM_N])
     // Run the reference code
     pointwise_montgomery(r_mul, r_mul, test_ram);
 
-    int ret = compare_bram_array(&ram, r_mul, "ntt2x2_MUL");
+    int ret = compare_bram_array(&ram, r_mul, "ntt2x2_MUL", DECODE_FALSE, 0);
 
     // printf("==============MUL is Correct!\n\n");
     return ret;
@@ -71,7 +79,8 @@ int main()
     {
         for (int i = 0; i < DILITHIUM_N; i++)
         {
-            t1 = rand() % DILITHIUM_Q;
+            t1 = i+123;
+            // t1 = rand() % DILITHIUM_Q;
             r_ntt[i] = t1;
 
             t2 = rand() % DILITHIUM_Q;
@@ -81,6 +90,9 @@ int main()
             test_ram[i] = t3;
         }
 
+        (void) test_ram;
+        (void) r_mul;
+        (void) r_ntt;
         ret &= ntt2x2_INVNTT(r_ntt);
         ret &= ntt2x2_MUL(r_mul, test_ram);
 
