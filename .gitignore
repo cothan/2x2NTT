@@ -64,3 +64,4 @@ dilithium/ntt2x2
 dilithium/.gdb_history
 dilithium/ntt_test
 dilithium/test
+dilithium/ntt2x2_test
