@@ -5,14 +5,21 @@
 #include "mytypes.h"
 #include "consts.h"
 
-void ntt2x2(i96 ram[DILITHIUM_N / 4], i96 mul_ram[DILITHIUM_N / 4], int mode, int decode)
+void ntt2x2(u96 ram[DILITHIUM_N / 4], u96 mul_ram[DILITHIUM_N / 4], OPERATION mode, MAPPING decode)
 {
-    u24 fifo_i[DEPT_I] = {0},
-        fifo_a[DEPT_A] = {0},
-        fifo_b[DEPT_B] = {0},
-        fifo_c[DEPT_C] = {0},
-        fifo_d[DEPT_D] = {0};
+    static u24  fifo_i[DEPT_I] = {0},
+                fifo_a[DEPT_A] = {0},
+                fifo_b[DEPT_B] = {0},
+                fifo_c[DEPT_C] = {0},
+                fifo_d[DEPT_D] = {0};
+    const int w_m1 = 2;
+    const int w_m2 = 1;
+
+    // Twiddle factor value
+    u24 w1, w2, w3, w4;
+    // Value read from RAM 
     u24 a, b, c, d;
+    // Value write to RAM
     u24 fa, fb, fc, fd, fi;
     bool write_en = false;
 
@@ -20,21 +27,24 @@ void ntt2x2(i96 ram[DILITHIUM_N / 4], i96 mul_ram[DILITHIUM_N / 4], int mode, in
     int ram_index, bound, addr;
 
     int count = 0;
-    int m_counter = 0;
 
-    const int w_m1 = 2;
-    const int w_m2 = 1;
-
-    u24 w1, w2, w3, w4;
-
-    // TODO: support NTT_MODE
-    if (mode == MUL_MODE)
+    switch (mode)
     {
+    case MUL_MODE:
         bound = 1;
-    }
-    else
-    {
+        break;
+
+    case INVERSE_NTT_MODE:
         bound = DILITHIUM_LOGN;
+        break;
+
+    case FORWARD_NTT_MODE:
+        bound = 0;
+        break;
+
+    default:
+        bound = 0;
+        break;
     }
 
     // iterate 2 levels at a time
@@ -45,7 +55,7 @@ void ntt2x2(i96 ram[DILITHIUM_N / 4], i96 mul_ram[DILITHIUM_N / 4], int mode, in
             for (int k = 0; k < N / 4; k += 1 << s)
             {
 #pragma HLS LOOP_FLATTEN
-                if (j == 0)
+                if (k == 0)
                 {
                     if (mode == INVERSE_NTT_MODE)
                     {
@@ -56,7 +66,7 @@ void ntt2x2(i96 ram[DILITHIUM_N / 4], i96 mul_ram[DILITHIUM_N / 4], int mode, in
                         // Layer s + 1
                         i4 = i3 = (N >> (s + 1)) - 1;
                     }
-                    else
+                    else if (mode == FORWARD_NTT_MODE)
                     {
                         // FORWARD_NTT_MODE
                         #error "FORWARD_NTT_MODE is not ready"
@@ -68,24 +78,12 @@ void ntt2x2(i96 ram[DILITHIUM_N / 4], i96 mul_ram[DILITHIUM_N / 4], int mode, in
 
                 if (mode == MUL_MODE)
                 {
-                    // MUL
+                    // MUL_MODE
                     read_ram(&w1, &w2, &w3, &w4, mul_ram, ram_index);
                 }
                 else
                 {
-                    if (mode == INVERSE_NTT_MODE)
-                    {
-                        // read ROM
-                        w1 = -zetas_barret[i1];
-                        w2 = -zetas_barret[i2];
-                        w3 = -zetas_barret[i3];
-                        w4 = -zetas_barret[i4];
-                    }
-                    else
-                    {
-                        // FORWARD_NTT_MODE
-                        #error "FORWARD_NTT_MODE is not ready"
-                    }
+                    read_twiddle(&w1, &w2, &w3, &w4, zetas_barret, i1, i2, i3, i4);
                 }
 
                 read_ram(&a, &b, &c, &d, ram, ram_index);
@@ -100,16 +98,12 @@ void ntt2x2(i96 ram[DILITHIUM_N / 4], i96 mul_ram[DILITHIUM_N / 4], int mode, in
                 FIFO(DEPT_D, fifo_d, d);
                 fi = FIFO(DEPT_I, fifo_i, ram_index);
 
-                if (count == DEPT_I)
-                {
-                    // FIFO_A is full
-                    write_en = true;
-                    count = 0;
-                }
-                else
-                {
-                    count++;
-                }
+
+                // FIFO_A is full
+                write_en = count == DEPT_I;
+
+                // Reset counter when count == DEPT_I, happen once
+                count = (count == DEPT_I) ? 0 : count++;
 
                 if (write_en)
                 {
@@ -119,7 +113,7 @@ void ntt2x2(i96 ram[DILITHIUM_N / 4], i96 mul_ram[DILITHIUM_N / 4], int mode, in
                     // writeback
                     // printf("[%d] <= (%d, %d, %d, %d)\n", fi, fa, fb, fc, fd);
                 }
-                
+
                 if (mode == INVNTT_MODE)
                 {
                     // Only adjust omega in NTT mode
