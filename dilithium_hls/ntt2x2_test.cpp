@@ -13,15 +13,14 @@
 
 int ntt2x2_INVNTT(int32_t r_gold[DILITHIUM_N])
 {
-    bram ram, mul_ram;
+    u96 ram[DILITHIUM_N/4], mul_ram[DILITHIUM_N/4];
     // Load data into BRAM, 4 coefficients per line
-    reshape(&ram, r_gold);
-    reshape(&mul_ram, MUL_RAM_barret);
+    
     // Compute NTT
-    ntt2x2(&ram, &mul_ram, INVERSE_NTT_MODE, DECODE_FALSE);
+    ntt2x2(ram, mul_ram, INVERSE_NTT_MODE, DECODE_FALSE);
 
     // Enable DECODE_TRUE only after NTT transform
-    ntt2x2(&ram, &mul_ram, MUL_MODE, DECODE_TRUE);
+    ntt2x2(ram, mul_ram, MUL_MODE, DECODE_TRUE);
 
     // Run the reference code
     invntt_tomont(r_gold);
@@ -29,7 +28,7 @@ int ntt2x2_INVNTT(int32_t r_gold[DILITHIUM_N])
     // print_array(r_gold, 16, "r_gold");
     // print_reshaped_array(&ram, 4, "ram");
 
-    int ret = compare_bram_array(&ram, r_gold, "ntt2x2_INVNTT");
+    int ret = compare_bram_array(ram, r_gold, "ntt2x2_INVNTT");
 
     return ret;
 }
