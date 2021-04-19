@@ -5,7 +5,7 @@
 #include "mytypes.h"
 #include "consts.h"
 
-void ntt2x2(u96 ram[DILITHIUM_N / 4], u96 mul_ram[DILITHIUM_N / 4], OPERATION mode, MAPPING decode)
+void ntt2x2(u96 ram[DILITHIUM_N / 4], u96 mul_ram[DILITHIUM_N / 4], enum OPERATION mode, enum MAPPING decode)
 {
     static u24  fifo_i[DEPT_I] = {0},
                 fifo_a[DEPT_A] = {0},
@@ -52,7 +52,7 @@ void ntt2x2(u96 ram[DILITHIUM_N / 4], u96 mul_ram[DILITHIUM_N / 4], OPERATION mo
     {
         for (int j = 0; j < (1 << s); j++)
         {
-            for (int k = 0; k < N / 4; k += 1 << s)
+            for (int k = 0; k < DILITHIUM_N / 4; k += 1 << s)
             {
 #pragma HLS LOOP_FLATTEN
                 if (k == 0)
@@ -61,15 +61,15 @@ void ntt2x2(u96 ram[DILITHIUM_N / 4], u96 mul_ram[DILITHIUM_N / 4], OPERATION mo
                     {
                         // INV_NTT mode
                         // Layer s
-                        i1 = (N >> s) - 1;
-                        i2 = (N >> s) - 2;
+                        i1 = (DILITHIUM_N >> s) - 1;
+                        i2 = (DILITHIUM_N >> s) - 2;
                         // Layer s + 1
-                        i4 = i3 = (N >> (s + 1)) - 1;
+                        i4 = i3 = (DILITHIUM_N >> (s + 1)) - 1;
                     }
                     else if (mode == FORWARD_NTT_MODE)
                     {
                         // FORWARD_NTT_MODE
-                        #error "FORWARD_NTT_MODE is not ready"
+                        // #error "FORWARD_NTT_MODE is not ready"
                     }
                 }
 
@@ -114,7 +114,7 @@ void ntt2x2(u96 ram[DILITHIUM_N / 4], u96 mul_ram[DILITHIUM_N / 4], OPERATION mo
                     // printf("[%d] <= (%d, %d, %d, %d)\n", fi, fa, fb, fc, fd);
                 }
 
-                if (mode == INVNTT_MODE)
+                if (mode == INVERSE_NTT_MODE)
                 {
                     // Only adjust omega in NTT mode
                     i1 -= w_m1;
@@ -124,7 +124,7 @@ void ntt2x2(u96 ram[DILITHIUM_N / 4], u96 mul_ram[DILITHIUM_N / 4], OPERATION mo
                 }
                 else
                 {
-                    #error "FORWARD_NTT is not ready"
+                    // #error "FORWARD_NTT is not ready"
                 }
                 // Decode only happen once
                 decode = 0;
