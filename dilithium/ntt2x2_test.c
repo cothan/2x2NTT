@@ -30,7 +30,7 @@ int ntt2x2_INVNTT(int32_t r_gold[DILITHIUM_N])
     // print_array(r_gold, 256, "r_gold");
     // print_reshaped_array(&ram, 64, "ram");
 
-    int ret = compare_bram_array(&ram, r_gold, "ntt2x2_INVNTT", DECODE_TRUE, 1);
+    int ret = compare_bram_array(&ram, r_gold, "ntt2x2_INVNTT", DECODE_TRUE, 0);
 
     return ret;
 }

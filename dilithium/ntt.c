@@ -88,10 +88,8 @@ void ntt(int32_t a[DILITHIUM_N]) {
 
   k = 0;
   const uint32_t al_N = 256;
-  // for(len = 128; len > 0; len >>= 1) {
-    for(len = al_N/2; len > 0; len >>= 1) {
-    // for(start = 0; start < N; start = j + len) {
-      for(start = 0; start < al_N; start = j + len) {
+  for(len = al_N/2; len > 0; len >>= 1) {
+    for(start = 0; start < al_N; start = j + len) {
       zeta = zetas_barret[++k];
       for(j = start; j < start + len; ++j) {
         // if (len > 0 ) printf("%d: [%d] %d %d\n", len, k, j, j+len);
@@ -117,7 +115,6 @@ void ntt(int32_t a[DILITHIUM_N]) {
 void invntt_tomont(int32_t a[DILITHIUM_N]) {
   unsigned int start, len, j, k;
   int32_t t, zeta;
-  // const int32_t f = 41978; // mont^2/256
   const int32_t f_barrett = 8347681; // 2/256
 
   k = 256;
@@ -129,21 +126,14 @@ void invntt_tomont(int32_t a[DILITHIUM_N]) {
         t = a[j];
         a[j] = t + a[j + len];
         a[j + len] = t - a[j + len];
-        // a[j + len] = montgomery_reduce((int64_t)zeta * a[j + len]);
         a[j + len] = ((int64_t)zeta * a[j + len]) % DILITHIUM_Q;
       }
     }
   }
 
   for(j = 0; j < DILITHIUM_N; ++j) {
-    // a[j] = montgomery_reduce((int64_t)f * a[j]);
     a[j] = ((int64_t)f_barrett * a[j]) % DILITHIUM_Q;
   }
-
-  // // strip out of montgomery domain 
-  // for(j = 0; j < N; ++j) {
-  //   a[j] = montgomery_reduce((int64_t)1 * a[j]);
-  // }
 }
 
 /*************************************************
@@ -160,6 +150,5 @@ void invntt_tomont(int32_t a[DILITHIUM_N]) {
 void pointwise_montgomery(int32_t *c, int32_t *a, const int32_t *b) {
   unsigned int i;
   for(i = 0; i < DILITHIUM_N; ++i)
-    // c[i] = montgomery_reduce((int64_t)a[i] * b[i]);
     c[i] = ((int64_t)a[i] * b[i]) % DILITHIUM_Q;
 }
