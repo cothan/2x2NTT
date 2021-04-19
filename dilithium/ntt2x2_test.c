@@ -11,11 +11,11 @@
 #include "ntt.h"
 #include "util.h"
 
-int ntt2x2_INVNTT(int32_t r_gold[DILITHIUM_N], int32_t r[DILITHIUM_N])
+int ntt2x2_INVNTT(int32_t r_gold[DILITHIUM_N])
 {
     bram ram, mul_ram;
     // Load data into BRAM, 4 coefficients per line
-    reshape(&ram, r);
+    reshape(&ram, r_gold);
     reshape(&mul_ram, MUL_RAM_barret);
     // Compute NTT
     ntt2x2(&ram, &mul_ram, INVERSE_NTT_MODE, DECODE_FALSE);
@@ -26,53 +26,22 @@ int ntt2x2_INVNTT(int32_t r_gold[DILITHIUM_N], int32_t r[DILITHIUM_N])
     // Run the reference code
     invntt_tomont(r_gold);
 
-    // Compare with the reference code
-    int32_t a, b, c, d;
-    int32_t ta, tb, tc, td;
-
-    int addr;
-    int ret = 0;
-
     // print_array(r_gold, 16, "r_gold");
     // print_reshaped_array(&ram, 4, "ram");
 
-    for (int i = 0; i < DILITHIUM_N; i += 4)
-    {
-        // Get golden result
-        a = r_gold[i + 0];
-        b = r_gold[i + 1];
-        c = r_gold[i + 2];
-        d = r_gold[i + 3];
+    int ret = compare_bram_array(&ram, r_gold, "ntt2x2_INVNTT");
 
-        addr = addr_decoder(i / 4);
-        read_ram(&ta, &tb, &tc, &td, &ram, addr);
-        // Comapre with reference code
-
-        // Quick xor, I hate long if-else clause
-        ret |= a != ta;
-        ret |= b != tb;
-        ret |= c != tc;
-        ret |= d != td;
-
-        if (ret)
-        {
-            printf("INVTNTT Error at index: %d => %d\n", addr, i);
-            printf("%12d | %12d | %12d | %12d\n", a, b, c, d);
-            printf("%12d | %12d | %12d | %12d\n", ta, tb, tc, td);
-            return 1;
-        }
-    }
-    printf("==============INV_NTT is Correct!\n\n");
-    return 0;
+    return ret;
 }
 
-int ntt2x2_MUL(int32_t r_gold[DILITHIUM_N], int32_t r[DILITHIUM_N])
+int ntt2x2_MUL(int32_t r_mul[DILITHIUM_N], int32_t test_ram[DILITHIUM_N])
 {
+    // Compare with the reference code
     bram ram, mul_ram;
 
     // Load data into BRAM, 4 coefficients per line
-    reshape(&ram, r);
-    reshape(&mul_ram, MUL_test_RAM);
+    reshape(&ram, r_mul);
+    reshape(&mul_ram, test_ram);
 
     // MUL Operation using NTT
     // Enable DECODE_TRUE only after NTT transform
@@ -80,84 +49,46 @@ int ntt2x2_MUL(int32_t r_gold[DILITHIUM_N], int32_t r[DILITHIUM_N])
     ntt2x2(&ram, &mul_ram, MUL_MODE, DECODE_FALSE);
 
     // Run the reference code
-    pointwise_montgomery(r_gold, r_gold, MUL_test_RAM);
+    pointwise_montgomery(r_mul, r_mul, test_ram);
 
-    // Compare with the reference code
-    int32_t a, b, c, d;
-    int32_t ta, tb, tc, td;
+    int ret = compare_bram_array(&ram, r_mul, "ntt2x2_MUL");
 
-    int addr;
-    int ret = 0;
-
-    // print_array(r_gold, 32, "gold");
-    // print_reshaped_array(&ram, 8, "first 8");
-
-    for (int i = 0; i < DILITHIUM_N; i += 4)
-    {
-        // Get golden result
-        a = r_gold[i + 0];
-        b = r_gold[i + 1];
-        c = r_gold[i + 2];
-        d = r_gold[i + 3];
-
-        addr = i / 4;
-        read_ram(&ta, &tb, &tc, &td, &ram, addr);
-
-        // Comapre with reference code
-
-        // Quick xor, I hate long if-else clause
-        ret |= a != ta;
-        ret |= b != tb;
-        ret |= c != tc;
-        ret |= d != td;
-
-        if (ret)
-        {
-            printf("MUL Error at index: %d => %d\n", addr, i);
-            printf("%12d | %12d | %12d | %12d\n", a, b, c, d);
-            printf("%12d | %12d | %12d | %12d\n", ta, tb, tc, td);
-            return 1;
-        }
-    }
-    printf("==============MUL is Correct!\n\n");
-    return 0;
+    // printf("==============MUL is Correct!\n\n");
+    return ret;
 }
 
-#define TESTS 10
+#define TESTS 1000
 
 int main()
 {
     srand(time(0));
     // srand(0);
-    int32_t r[DILITHIUM_N], r_gold[DILITHIUM_N], r_gold_copy[DILITHIUM_N], r_copy[DILITHIUM_N];
-    int32_t t1, t2;
-    int ret = 0;
+    int32_t r_ntt[DILITHIUM_N], r_mul[DILITHIUM_N], test_ram[DILITHIUM_N];
+    int32_t t1, t2, t3;
+    int ret = 1;
 
     for (int k = 0; k < TESTS; k++)
     {
         for (int i = 0; i < DILITHIUM_N; i++)
         {
-            // t1 = i;
             t1 = rand() % DILITHIUM_Q;
-            r[i] = t1;
-            r_gold[i] = t1;
+            r_ntt[i] = t1;
 
-            // t2 = i + 2;
             t2 = rand() % DILITHIUM_Q;
-            r_gold_copy[i] = t2;
-            r_copy[i] = t2;
+            r_mul[i] = t2;
+
+            t3 = rand() % DILITHIUM_Q;
+            test_ram[i] = t3;
         }
 
-        ret |= ntt2x2_INVNTT(r_gold, r);
-        ret |= ntt2x2_MUL(r_gold_copy, r_copy);
+        ret &= ntt2x2_INVNTT(r_ntt);
+        ret &= ntt2x2_MUL(r_mul, test_ram);
 
         if (ret)
         {
             break;
         }
     }
-
-    // ntt(r_gold);
 
     if (ret)
     {
