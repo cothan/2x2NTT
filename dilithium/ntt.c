@@ -4,7 +4,7 @@
 #include "ntt.h"
 #include "reduce.h"
 
-static const int32_t zetas[N] = {
+static const int32_t zetas[DILITHIUM_N] = {
          0,    25847, -2608894,  -518909,   237124,  -777960,  -876248,   466468,
    1826347,  2353451,  -359251, -2091905,  3119733, -2884855,  3111497,  2680103,
    2725464,  1024112, -1079900,  3585928,  -549488, -1119584,  2619752, -2108549,
@@ -39,7 +39,7 @@ static const int32_t zetas[N] = {
    -554416,  3919660,   -48306, -1362209,  3937738,  1400424,  -846154,  1976782
 };
 
-static const int32_t zetas_barret[N] = {
+static const int32_t zetas_barret[DILITHIUM_N] = {
         0, -3572223,  3765607,  3761513, -3201494, -2883726, -3145678, -3201430, 
   -601683,  3542485,  2682288,  2129892,  3764867, -1005239,   557458, -1221177, 
   -3370349, -4063053,  2663378, -1674615, -3524442,  -434125,   676590, -1335936, 
@@ -82,17 +82,20 @@ static const int32_t zetas_barret[N] = {
 *
 * Arguments:   - uint32_t p[N]: input/output coefficient array
 **************************************************/
-void ntt(int32_t a[N]) {
+void ntt(int32_t a[DILITHIUM_N]) {
   unsigned int len, start, j, k;
   int32_t zeta, t;
 
   k = 0;
-  for(len = 128; len > 0; len >>= 1) {
-    for(start = 0; start < N; start = j + len) {
-      zeta = zetas[++k];
+  const uint32_t al_N = 256;
+  // for(len = 128; len > 0; len >>= 1) {
+    for(len = al_N/2; len > 0; len >>= 1) {
+    // for(start = 0; start < N; start = j + len) {
+      for(start = 0; start < al_N; start = j + len) {
+      zeta = zetas_barret[++k];
       for(j = start; j < start + len; ++j) {
-        if (len > 8 ) printf("%d: [%d] %d %d\n", len, k, j, j+len);
-        t = montgomery_reduce((int64_t)zeta * a[j + len]);
+        // if (len > 0 ) printf("%d: [%d] %d %d\n", len, k, j, j+len);
+        t = ((int64_t)zeta * a[j + len]) % DILITHIUM_Q;
         a[j + len] = a[j] - t;
         a[j] = a[j] + t;  
       }
@@ -111,15 +114,15 @@ void ntt(int32_t a[N]) {
 *
 * Arguments:   - uint32_t p[N]: input/output coefficient array
 **************************************************/
-void invntt_tomont(int32_t a[N]) {
+void invntt_tomont(int32_t a[DILITHIUM_N]) {
   unsigned int start, len, j, k;
   int32_t t, zeta;
-  const int32_t f = 41978; // mont^2/256
+  // const int32_t f = 41978; // mont^2/256
   const int32_t f_barrett = 16382; // 2/256
 
   k = 256;
-  for(len = 1; len < N; len <<= 1) {
-    for(start = 0; start < N; start = j + len) {
+  for(len = 1; len < DILITHIUM_N; len <<= 1) {
+    for(start = 0; start < DILITHIUM_N; start = j + len) {
       // zeta = -zetas[--k];
       zeta = -zetas_barret[--k];
       for(j = start; j < start + len; ++j) {
@@ -127,14 +130,14 @@ void invntt_tomont(int32_t a[N]) {
         a[j] = t + a[j + len];
         a[j + len] = t - a[j + len];
         // a[j + len] = montgomery_reduce((int64_t)zeta * a[j + len]);
-        a[j + len] = ((int64_t)zeta * a[j + len]) % Q;
+        a[j + len] = ((int64_t)zeta * a[j + len]) % DILITHIUM_Q;
       }
     }
   }
 
-  for(j = 0; j < N; ++j) {
+  for(j = 0; j < DILITHIUM_N; ++j) {
     // a[j] = montgomery_reduce((int64_t)f * a[j]);
-    a[j] = ((int64_t)f_barrett * a[j]) % Q;
+    a[j] = ((int64_t)f_barrett * a[j]) % DILITHIUM_Q;
   }
 
   // // strip out of montgomery domain 
@@ -154,9 +157,9 @@ void invntt_tomont(int32_t a[N]) {
 *              - const poly *a: pointer to first input polynomial
 *              - const poly *b: pointer to second input polynomial
 **************************************************/
-void pointwise_montgomery(int32_t *c, int32_t *a, int32_t *b) {
+void pointwise_montgomery(int32_t *c, int32_t *a, const int32_t *b) {
   unsigned int i;
-  for(i = 0; i < N; ++i)
+  for(i = 0; i < DILITHIUM_N; ++i)
     // c[i] = montgomery_reduce((int64_t)a[i] * b[i]);
-    c[i] = ((int64_t)a[i] * b[i]) % Q;
+    c[i] = ((int64_t)a[i] * b[i]) % DILITHIUM_Q;
 }
