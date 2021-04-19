@@ -124,6 +124,10 @@ int32_t MUL_RAM[N] = {
     41978, 41978, 41978, 41978, 41978, 41978, 41978, 41978, 
 };
 
+int32_t MUL_test_RAM[N] = {
+    11, 22, 33, 44, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255,
+};
+
 int32_t MUL_RAM_barret[N] = {
     16382, 16382, 16382, 16382, 16382, 16382, 16382, 16382, 
     16382, 16382, 16382, 16382, 16382, 16382, 16382, 16382, 
@@ -182,7 +186,8 @@ void swap(int32_t *a, int32_t *b)
 }
 
 
-void butterfly(int mode, int32_t *bj, int32_t *bjlen, const int32_t zeta, int32_t aj, int32_t ajlen)
+void butterfly(int mode, int32_t *bj, int32_t *bjlen, const int32_t zeta, 
+                        const int32_t aj, const int32_t ajlen)
 {
     static int32_t aj1, ajlen1;
     static int32_t aj2, ajlen2;
@@ -380,6 +385,7 @@ void buttefly_circuit(int32_t *a, int32_t *b,
     static int32_t a1, b1, c1, d1;
     static int32_t a2, b2, c2, d2;
     static int32_t a3, b3, c3, d3;
+    static int32_t tw1, tw2, tw3, tw4;
 
     a0 = *a;
     b0 = *b;
@@ -399,8 +405,18 @@ void buttefly_circuit(int32_t *a, int32_t *b,
     save_a = a0; 
     save_c = c0;
 
-    butterfly(mode, &a1, &b1, w1, a0, b0);
-    butterfly(mode, &c1, &d1, w2, c0, d0);
+    if (mode == MUL_MODE)
+    {
+        tw1 = w2; 
+        tw2 = w4;
+    }
+    else
+    {
+        tw1 = w1;
+        tw2 = w2;
+    }
+    butterfly(mode, &a1, &b1, tw1, a0, b0);
+    butterfly(mode, &c1, &d1, tw2, c0, d0);
 
     if (mode == MUL_MODE)
     {
@@ -438,8 +454,18 @@ void buttefly_circuit(int32_t *a, int32_t *b,
         printf("==============================%d %d | %d %d\n", ram_i / 4, ram_i, j, k);
     } */
 
-    butterfly(mode, &a3, &b3, w3, a2, b2);
-    butterfly(mode, &c3, &d3, w4, c2, d2);
+    if (mode == MUL_MODE)
+    {
+        tw3 = w1;
+        tw4 = w3;
+    }
+    else
+    {
+        tw3 = w3;
+        tw4 = w4;
+    }
+    butterfly(mode, &a3, &b3, tw3, a2, b2);
+    butterfly(mode, &c3, &d3, tw4, c2, d2);
 
     if (mode == MUL_MODE)
     {
@@ -483,12 +509,12 @@ void ntt2x2(bram *ram, bram *mul_ram, int mode, int decode)
     
 
     // TODO: support NTT_MODE
-    if (mode == INVNTT_MODE)
+    if (mode == MUL_MODE)
     {
-        bound = LOG_N;
+        bound = 1;
     }
     else{
-        bound = 1;
+        bound = LOG_N;
     }
 
     // iterate 2 levels at a time
@@ -583,10 +609,14 @@ void ntt2x2(bram *ram, bram *mul_ram, int mode, int decode)
                     i3 -= w_m2;
                     i4 -= w_m2;
                 }
+                // // Decode only happen once
+                // if (decode == DECODE_TRUE)
+                // {
+                //     printf("%d\n", k);
+                // }
             }
         }
-        // Decode only happen once
-        decode = 0;
+            decode = DECODE_FALSE;
     }
     // Write back left over coefficients in FIFO
     for (int i = 0; i < DEPT_I; i++)
@@ -658,7 +688,7 @@ int ntt2x2_INVNTT(int32_t r_gold[N], int32_t r[N])
 
         if (ret)
         {
-            printf("Error at index: %d => %d\n", addr, i);
+            printf("INVTNTT Error at index: %d => %d\n", addr, i);
             printf("%12d | %12d | %12d | %12d\n", a, b, c, d);
             printf("%12d | %12d | %12d | %12d\n", ta, tb, tc, td);
             return 1;
@@ -674,7 +704,7 @@ int ntt2x2_MUL(int32_t r_gold[N], int32_t r[N])
     
     // Load data into BRAM, 4 coefficients per line
     reshape(&ram, r);
-    reshape(&mul_ram, MUL_RAM);
+    reshape(&mul_ram, MUL_test_RAM);
 
     // MUL Operation using NTT
     // Enable DECODE_TRUE only after NTT transform
@@ -682,7 +712,7 @@ int ntt2x2_MUL(int32_t r_gold[N], int32_t r[N])
     ntt2x2(&ram, &mul_ram, MUL_MODE, DECODE_FALSE);
     
     // Run the reference code
-    pointwise_montgomery(r_gold, r_gold, MUL_RAM);
+    pointwise_montgomery(r_gold, r_gold, MUL_test_RAM);
 
     // Compare with the reference code
     int32_t a, b, c, d;
@@ -715,7 +745,7 @@ int ntt2x2_MUL(int32_t r_gold[N], int32_t r[N])
 
         if (ret)
         {
-            printf("Error at index: %d => %d\n", addr, i);
+            printf("MUL Error at index: %d => %d\n", addr, i);
             printf("%12d | %12d | %12d | %12d\n", a, b, c, d);
             printf("%12d | %12d | %12d | %12d\n", ta, tb, tc, td);
             return 1;
@@ -744,6 +774,7 @@ int main()
             r[i] = t1;
             r_gold[i] = t1;
             
+            // t2 = i + 2;
             t2 = rand() % Q;
             r_gold_copy[i] = t2; 
             r_copy[i] = t2;
