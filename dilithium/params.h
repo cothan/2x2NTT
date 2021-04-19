@@ -1,44 +1,46 @@
 #ifndef PARAMS_H
 #define PARAMS_H
 
-#include "config.h"
+enum OPERATION {FORWARD_NTT_MODE, INVERSE_NTT_MODE, MUL_MODE};
+enum MAPPING {DECODE_TRUE, DECODE_FALSE};
 
-#define SEEDBYTES 32
-#define CRHBYTES 64
-#define N 256
-#define Q 8380417
-#define D 13
-#define ROOT_OF_UNITY 1753
+#define DILITHIUM_SEEDBYTES 32
+#define DILITHIUM_CRHBYTES 64
+#define DILITHIUM_N 256
+#define DILITHIUM_LOGN 8
+#define DILITHIUM_Q 8380417 // 2**23 - 2**13 + 1
+#define DILITHIUM_D 13
+#define DILITHIUM_ROOT_OF_UNITY 1753
 
 #if DILITHIUM_MODE == 2
-#define K 4
-#define L 4
-#define ETA 2
-#define TAU 39
-#define BETA 78
-#define GAMMA1 (1 << 17)
-#define GAMMA2 ((Q-1)/88)
-#define OMEGA 80
+#define DILITHIUM_K 4
+#define DILITHIUM_L 4
+#define DILITHIUM_ETA 2
+#define DILITHIUM_TAU 39
+#define DILITHIUM_BETA 78
+#define DILITHIUM_GAMMA1 (1 << 17)
+#define DILITHIUM_GAMMA2 ((Q-1)/88)
+#define DILITHIUM_OMEGA 80
 
 #elif DILITHIUM_MODE == 3
-#define K 6
-#define L 5
-#define ETA 4
-#define TAU 49
-#define BETA 196
-#define GAMMA1 (1 << 19)
-#define GAMMA2 ((Q-1)/32)
-#define OMEGA 55
+#define DILITHIUM_K 6
+#define DILITHIUM_L 5
+#define DILITHIUM_ETA 4
+#define DILITHIUM_TAU 49
+#define DILITHIUM_BETA 196
+#define DILITHIUM_GAMMA1 (1 << 19)
+#define DILITHIUM_GAMMA2 ((Q-1)/32)
+#define DILITHIUM_OMEGA 55
 
 #elif DILITHIUM_MODE == 5
-#define K 8
-#define L 7
-#define ETA 2
-#define TAU 60
-#define BETA 120
-#define GAMMA1 (1 << 19)
-#define GAMMA2 ((Q-1)/32)
-#define OMEGA 75
+#define DILITHIUM_K 8
+#define DILITHIUM_L 7
+#define DILITHIUM_ETA 2
+#define DILITHIUM_TAU 60
+#define DILITHIUM_BETA 120
+#define DILITHIUM_GAMMA1 (1 << 19)
+#define DILITHIUM_GAMMA2 ((Q-1)/32)
+#define DILITHIUM_OMEGA 75
 
 #endif
 

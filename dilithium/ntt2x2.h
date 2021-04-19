@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "params.h"
 
+#include "params.h"
 
 typedef struct
 {
@@ -12,8 +13,9 @@ typedef struct
 
 typedef struct
 {
-    line vec[N / 4];
+    line vec[DILITHIUM_N / 4];
 } bram;
 
+void ntt2x2(bram *ram, bram *mul_ram, enum OPERATION mode, enum MAPPING decode);
 
 #endif

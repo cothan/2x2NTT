@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "util.h"
+#include "params.h"
 
 void print_array(int32_t *a, int bound, const char *string)
 {
@@ -25,9 +26,9 @@ void print_reshaped_array(bram *ram, int bound, const char *string)
 }
 
 // Store 4 coefficients per line
-void reshape(bram *ram, int32_t in[N])
+void reshape(bram *ram, const int32_t in[DILITHIUM_N])
 {
-    for (int i = 0; i < N / 4; i++)
+    for (int i = 0; i <  DILITHIUM_N/ 4; i++)
     {
         for (int j = 0; j < 4; j++)
         {
