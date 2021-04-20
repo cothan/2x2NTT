@@ -55,7 +55,7 @@ void PIPO(int32_t out[4], const int dept, int32_t *fifo4, const int32_t w[4])
 
 void read_fifo(int32_t *fa, int32_t *fb,
                int32_t *fc, int32_t *fd,
-               const int count, const int mode,
+               const int count, enum OPERATION mode,
                const int32_t fifo_a[DEPT_A],
                const int32_t fifo_b[DEPT_B],
                const int32_t fifo_c[DEPT_C],
