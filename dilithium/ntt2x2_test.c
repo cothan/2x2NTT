@@ -111,7 +111,7 @@ int main()
             t3 = rand() % DILITHIUM_Q;
             test_ram[i] = t3;
 
-            t4 = i; 
+            t4 = rand() % DILITHIUM_Q; 
             r_ntt[i] = t4;
         }
 
