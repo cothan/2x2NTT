@@ -3,4 +3,6 @@
 
 int addr_decoder(int addr_in);
 
+int addr_encoder(int addr_in);
+
 #endif
