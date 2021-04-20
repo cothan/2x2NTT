@@ -92,10 +92,9 @@ void ntt(int32_t a[DILITHIUM_N]) {
     for(start = 0; start < al_N; start = j + len) {
       zeta = zetas_barret[++k];
       for(j = start; j < start + len; ++j) {
-        // if (len > 0 ) printf("%d: [%d] %d %d\n", len, k, j, j+len);
         t = ((int64_t)zeta * a[j + len]) % DILITHIUM_Q;
-        a[j + len] = a[j] - t;
-        a[j] = a[j] + t;  
+        a[j + len] = (a[j] - t) % DILITHIUM_Q;
+        a[j] = (a[j] + t) % DILITHIUM_Q;  
       }
     }
   }
