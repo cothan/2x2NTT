@@ -6,10 +6,10 @@
 
 void print_array(int32_t *a, int bound, const char *string)
 {
-    printf("%s :\n", string);
+    printf("%s :", string);
     for (int i = 0; i < bound; i++)
     {
-        printf("%d, ", a[i]);
+        printf("%3d, ", a[i]);
     }
     printf("\n");
 }
@@ -59,7 +59,7 @@ int compare_array(int32_t *a, int32_t *b, int bound)
     return 0;
 }
 
-int compare_bram_array(bram *ram, int32_t array[DILITHIUM_N], const char *string, enum MAPPING decode, int print_out)
+int compare_bram_array(bram *ram, int32_t array[DILITHIUM_N], const char *string, enum MAPPING mapping, int print_out)
 {
     int32_t a, b, c, d;
     int32_t ta, tb, tc, td;
@@ -76,9 +76,18 @@ int compare_bram_array(bram *ram, int32_t array[DILITHIUM_N], const char *string
 
         addr = i / 4;
         if (print_out) printf("%d: %d, %d %d, %d\n", addr, a, b, c, d);
-        if (decode == DECODE_TRUE)
+        switch (mapping)
         {
+        case ENCODE_TRUE:
+            addr = addr_encoder(addr);
+            break;
+        
+        case DECODE_TRUE:
             addr = addr_decoder(addr);
+            break;
+
+        default:
+            break;
         }
         if (print_out) print_index_reshaped_array(ram, addr);
         read_ram(&ta, &tb, &tc, &td, ram, addr);
@@ -92,7 +101,7 @@ int compare_bram_array(bram *ram, int32_t array[DILITHIUM_N], const char *string
 
         if ( (ta != a) || (tb != b) || (tc != c) || (td != d) )
         {
-            printf("%s Error at index: %d => %d\n", string, addr, i);
+            printf("%s Error at index: %d => %d\n", string, i, addr);
             printf("%12d | %12d | %12d | %12d\n", a, b, c, d);
             printf("%12d | %12d | %12d | %12d\n", ta, tb, tc, td);
             ret = 1;
