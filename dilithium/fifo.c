@@ -9,7 +9,7 @@
 int32_t FIFO(const int dept, int32_t *fifo, const int32_t new_value)
 {
     int32_t out = fifo[dept - 1];
-    for (int i = dept - 1; i > -1; i--)
+    for (int i = dept - 1; i > 0; i--)
     {
         fifo[i] = fifo[i - 1];
     }
@@ -20,7 +20,7 @@ int32_t FIFO(const int dept, int32_t *fifo, const int32_t new_value)
 
 /* Parallel in, serial out: This function receive 4 elements at the begin of FIFO. 
  */
-int32_t PISO(const int dept, int32_t *fifo, const int32_t *line)
+static int32_t PISO(const int dept, int32_t *fifo, const int32_t *line)
 {
     int32_t out = fifo[dept - 1];
     for (int i = dept - 1; i > 3; i--)
@@ -33,6 +33,24 @@ int32_t PISO(const int dept, int32_t *fifo, const int32_t *line)
     fifo[0] = line[3];
 
     return out;
+}
+
+void PIPO(int32_t out[4], const int dept, int32_t *fifo4, const int32_t w[4])
+{
+    out[0] = fifo4[dept - 1];
+    out[1] = fifo4[dept - 2];
+    out[2] = fifo4[dept - 3];
+    out[3] = fifo4[dept - 4];
+
+    for (int i = dept - 1; i > 3; i--)
+    {
+        // printf("%d <= %d\n", i, i - 1);
+        fifo4[i] = fifo4[i - 4];
+    }
+    fifo4[3] = w[0];
+    fifo4[2] = w[1];
+    fifo4[1] = w[2];
+    fifo4[0] = w[3];
 }
 
 void read_fifo(int32_t *fa, int32_t *fb,
@@ -95,48 +113,49 @@ void read_fifo(int32_t *fa, int32_t *fb,
     *fd = td;
 }
 
-void write_fifo(int32_t fifo_a[DEPT_A], int32_t fifo_b[DEPT_B],
+void write_fifo(int32_t *a, int32_t *b, int32_t *c, int32_t *d,
+                int32_t fifo_a[DEPT_A], int32_t fifo_b[DEPT_B],
                 int32_t fifo_c[DEPT_C], int32_t fifo_d[DEPT_D],
                 const int count,
                 const bram *ram, const int index)
 {
-    int32_t a, b, c, d;
-    a = ram->vec[index].coeffs[0];
-    b = ram->vec[index].coeffs[1];
-    c = ram->vec[index].coeffs[2];
-    d = ram->vec[index].coeffs[3];
+    int32_t fa, fb, fc, fd;
     switch (count & 3)
     {
+        // Use PISO to write
     case 0:
-        // FIFO_D
-        fifo_d[3] = a;
-        fifo_d[2] = b;
-        fifo_d[1] = c;
-        fifo_d[0] = d;
+        // Write to FIFO_D
+        fa = PISO(DEPT_D, fifo_d, ram->vec[index].coeffs);
+        fb = FIFO(DEPT_B, fifo_b, -1);
+        fc = FIFO(DEPT_C, fifo_c, -1);
+        fd = FIFO(DEPT_A, fifo_a, -1);
         break;
-
     case 1:
-        // FIFO_C
-        fifo_c[3] = a;
-        fifo_c[2] = b;
-        fifo_c[1] = c;
-        fifo_c[0] = d;
+        // Write to FIFO_B
+        fb = PISO(DEPT_B, fifo_b, ram->vec[index].coeffs);
+        fa = FIFO(DEPT_D, fifo_d, -1);
+        fc = FIFO(DEPT_C, fifo_c, -1);
+        fd = FIFO(DEPT_A, fifo_a, -1);
         break;
-
     case 2:
-        // FIFO_B
-        fifo_b[3] = a;
-        fifo_b[2] = b;
-        fifo_b[1] = c;
-        fifo_b[0] = d;
+        // Write to FIFO_C
+        fc = PISO(DEPT_C, fifo_c, ram->vec[index].coeffs);
+        fa = FIFO(DEPT_D, fifo_d, -1);
+        fb = FIFO(DEPT_B, fifo_b, -1);
+        fd = FIFO(DEPT_A, fifo_a, -1);
         break;
 
     default:
-        // FIFO_A
-        fifo_a[3] = a;
-        fifo_a[2] = b;
-        fifo_a[1] = c;
-        fifo_a[0] = d;
+        // Write to FIFO_A
+        fd = PISO(DEPT_A, fifo_a, ram->vec[index].coeffs);
+        fa = FIFO(DEPT_D, fifo_d, -1);
+        fb = FIFO(DEPT_B, fifo_b, -1);
+        fc = FIFO(DEPT_C, fifo_c, -1);
         break;
     }
+
+    *a = fa;
+    *b = fc;
+    *c = fb;
+    *d = fd;
 }
