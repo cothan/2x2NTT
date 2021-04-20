@@ -60,3 +60,23 @@ int addr_encoder(int addr_in)
         12, 28, 44, 60, 13, 29, 45, 61, 14, 30, 46, 62, 15, 31, 47, 63};
     return ntt_map[addr_in];
 }
+
+int resolve_address(enum MAPPING mapping, int addr)
+{
+    int ram_i;
+    switch (mapping)
+    {
+    case DECODE_TRUE:
+        ram_i = addr_decoder(addr);
+        break;
+    
+    case ENCODE_TRUE:
+        ram_i = addr_encoder(addr);
+        break;
+
+    default:
+        ram_i = addr;
+        break;
+    }
+    return ram_i;
+}
