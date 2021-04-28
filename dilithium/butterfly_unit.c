@@ -84,10 +84,8 @@ void butterfly(int mode, int32_t *bj, int32_t *bjlen, const int32_t zeta,
 
 void buttefly_circuit(int32_t *a, int32_t *b,
                       int32_t *c, int32_t *d,
-                      const int32_t w1,
-                      const int32_t w2,
-                      const int32_t w3,
-                      const int32_t w4,
+                      const int32_t w_fwd[4],
+                      const int32_t w_imul[4],
                       const int mode)
 {
     // 4 pipeline stages
@@ -97,11 +95,27 @@ void buttefly_circuit(int32_t *a, int32_t *b,
     static int32_t a2, b2, c2, d2;
     static int32_t a3, b3, c3, d3;
     static int32_t tw1, tw2, tw3, tw4;
+    int32_t w1, w2, w3, w4;
 
     a0 = *a;
     b0 = *b;
     c0 = *c;
     d0 = *d;
+
+    if (mode == FORWARD_NTT_MODE)
+    {
+        w1 = w_fwd[0];
+        w2 = w_fwd[1];
+        w3 = w_fwd[2];
+        w4 = w_fwd[3];
+    }
+    else
+    {
+        w1 = w_imul[0];
+        w2 = w_imul[1];
+        w3 = w_imul[2];
+        w4 = w_imul[3];
+    }
 
     /* For debugging purpose
     if ((ram_i < 64 || ram_i > 192) && (s > 2))

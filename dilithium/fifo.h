@@ -29,7 +29,13 @@ void PIPO(int32_t out[4], const int dept,
 void write_fifo(int32_t *a, int32_t *b, int32_t *c, int32_t *d,
                 int32_t fifo_a[DEPT_A], int32_t fifo_b[DEPT_B],
                 int32_t fifo_c[DEPT_C], int32_t fifo_d[DEPT_D],
-                const int count,
+                const int count, enum OPERATION mode,
                 const bram *ram, const int index);
+
+int32_t FIFO_I(const int dept, int32_t *fifo,
+               const int32_t new_value, enum OPERATION mode);
+
+int32_t FIFO_PISO(const int dept, int32_t *fifo, const int piso_en,
+                  const int32_t new_value, const int32_t *line);
 
 #endif
