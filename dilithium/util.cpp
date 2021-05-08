@@ -17,12 +17,11 @@ void print_array(int32_t *a, int bound, const char *string)
 void print_reshaped_array(bram *ram, int bound, const char *string)
 {
     printf("%s :\n", string);
+    int32_t a, b, c, d;
     for (int i = 0; i < bound; i++)
     {
-        for (int j = 0; j < 4; j++)
-        {
-            printf("%d, ", ram->vec[i].coeffs[j]);
-        }
+        read_ram(&a, &b, &c, &d, ram, i);
+        printf("%d, %d, %d, %d, ", a, b, c, d);
     }
     printf("\n");
 }
@@ -40,10 +39,7 @@ void reshape(bram *ram, const int32_t in[DILITHIUM_N])
 {
     for (int i = 0; i <  DILITHIUM_N/ 4; i++)
     {
-        for (int j = 0; j < 4; j++)
-        {
-            ram->vec[i].coeffs[j] = in[4 * i + j];
-        }
+        write_ram(ram, i, in[4*i], in[4*i +1], in[4*i + 2], in[4*i + 3]);
     }
 }
 
@@ -63,7 +59,7 @@ int compare_bram_array(bram *ram, int32_t array[DILITHIUM_N], const char *string
 {
     int32_t a, b, c, d;
     int32_t ta, tb, tc, td;
-    int ret = 0;
+    int error = 0;
     int addr;
 
     for (int i = 0; i < DILITHIUM_N; i += 4)
@@ -76,19 +72,8 @@ int compare_bram_array(bram *ram, int32_t array[DILITHIUM_N], const char *string
 
         addr = i / 4;
         if (print_out) printf("%d: %d, %d %d, %d\n", addr, a, b, c, d);
-        switch (mapping)
-        {
-        case ENCODE_TRUE:
-            addr = addr_encoder(addr);
-            break;
+        addr = resolve_address(mapping, addr);
         
-        case DECODE_TRUE:
-            addr = addr_decoder(addr);
-            break;
-
-        default:
-            break;
-        }
         if (print_out) print_index_reshaped_array(ram, addr);
         read_ram(&ta, &tb, &tc, &td, ram, addr);
 
@@ -104,12 +89,11 @@ int compare_bram_array(bram *ram, int32_t array[DILITHIUM_N], const char *string
             printf("%s Error at index: %d => %d\n", string, i, addr);
             printf("%12d | %12d | %12d | %12d\n", a, b, c, d);
             printf("%12d | %12d | %12d | %12d\n", ta, tb, tc, td);
-            ret = 1;
+            error = 1;
             break;
-            // return 1;
         }
     }
-    if (ret)
+    if (error)
     {
         return 1;
     }

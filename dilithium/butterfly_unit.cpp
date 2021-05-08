@@ -2,8 +2,8 @@
 #include <stdint.h>
 
 static 
-void butterfly(int mode, int32_t *bj, int32_t *bjlen, const int32_t zeta,
-                      const int32_t aj, const int32_t ajlen)
+void butterfly(int mode, int32_t *bj, int32_t *bjlen,
+                const int32_t zeta, const int32_t aj, const int32_t ajlen)
 {
     static int32_t aj1, ajlen1;
     static int32_t aj2, ajlen2;
@@ -56,20 +56,20 @@ void butterfly(int mode, int32_t *bj, int32_t *bjlen, const int32_t zeta,
     {
         if (aj4 & 1)
         {
-          aj5 = (aj4 >> 1) + (DILITHIUM_Q + 1) / 2;
+            aj5 = (aj4 >> 1) + (DILITHIUM_Q + 1) / 2;
         }
         else
         {
-          aj5 = (aj4 >> 1);
+            aj5 = (aj4 >> 1);
         }
 
         if (ajlen4 & 1)
         {
-          ajlen5 = (ajlen4 >> 1) + (DILITHIUM_Q + 1) / 2;
+            ajlen5 = (ajlen4 >> 1) + (DILITHIUM_Q + 1) / 2;
         }
         else
         {
-          ajlen5 = (ajlen4 >> 1);
+            ajlen5 = (ajlen4 >> 1);
         }
     }
     else

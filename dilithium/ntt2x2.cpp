@@ -9,9 +9,10 @@
 #include "ram_util.h"
 #include "butterfly_unit.h"
 
-int MAX(int a, int b)
+template <typename T>
+const T MAX(const T a, const T b)
 {
-    return (a < b) ? b : a;
+    return (a < b) ? b : a; // or: return comp(a,b)?b:a; for version (2)
 }
 
 void twiddle_resolve(int *i1, int *i2,
@@ -153,10 +154,10 @@ void update_indexes(int *i1, int *i2, int *i3, int *i4,
     {
         if (s < 6)
         {
-            l1 = MAX(i1_base, (l1 + 1) & mask1);
-            l2 = MAX(i2_base, (l2 + 1) & mask1);
-            l3 = MAX(i3_base, (l3 + 2) & mask2);
-            l4 = MAX(i4_base, (l4 + 2) & mask2);
+            l1 = MAX<int>(i1_base, (l1 + 1) & mask1);
+            l2 = MAX<int>(i2_base, (l2 + 1) & mask1);
+            l3 = MAX<int>(i3_base, (l3 + 2) & mask2);
+            l4 = MAX<int>(i4_base, (l4 + 2) & mask2);
         }
         else
         {
@@ -238,11 +239,11 @@ void ntt2x2(bram *ram, bram *mul_ram, enum OPERATION mode, enum MAPPING mapping)
                 get_twiddle(w, mode, mul_ram, ram_i, i1, i2, i3, i4);
 
                 // Buffer w for Forward NTT
-                PIPO(w_pipo, DEPT_W * 4, fifo_w, w);
+                PIPO<DEPT_W * 4>(w_pipo, fifo_w, w);
                 fi = FIFO_I(DEPT_W, fifo_i, ram_i, mode);
-                
+
                 read_ram(&a, &b, &c, &d, ram, ram_i);
-                
+
                 if (count == DEPT_I)
                 {
                     write_en = 1;
@@ -252,7 +253,7 @@ void ntt2x2(bram *ram, bram *mul_ram, enum OPERATION mode, enum MAPPING mapping)
                 {
                     count++;
                 }
-            
+
                 // Main circuit
                 buttefly_circuit(&a, &b, &c, &d, w_pipo, w, mode);
 
@@ -279,17 +280,15 @@ void ntt2x2(bram *ram, bram *mul_ram, enum OPERATION mode, enum MAPPING mapping)
     for (int i = 0; i < DEPT_I; i++)
     {
         fi = FIFO_I(DEPT_W, fifo_i, 0, mode);
-        PIPO(w_pipo, DEPT_W * 4, fifo_w, w);
+        PIPO<DEPT_W * 4>(w_pipo, fifo_w, w);
 
         write_fifo(&a, &b, &c, &d, fifo_a, fifo_b, fifo_c, fifo_d, count, mode, ram, ram_i);
         count++;
 
         read_fifo(&a, &b, &c, &d, count, mode, fifo_a, fifo_b, fifo_c, fifo_d);
-        
-        write_ram(ram, fi, a, b, c, d);
 
+        write_ram(ram, fi, a, b, c, d);
     }
-    
 }
 
 void forward_ntt2x2(bram *ram, bram *mul_ram, enum OPERATION mode, enum MAPPING decode)
@@ -364,7 +363,7 @@ void forward_ntt2x2(bram *ram, bram *mul_ram, enum OPERATION mode, enum MAPPING 
                 write_fifo(&a, &b, &c, &d, fifo_a, fifo_b, fifo_c,
                            fifo_d, fw_count, mode, ram, ram_i);
 
-                PIPO(w_pipo, DEPT_W * 4, fifo_w, w);
+                PIPO<DEPT_W * 4>(w_pipo, fifo_w, w);
                 fi = FIFO_I(DEPT_W, fifo_i, ram_i, mode);
 
                 if (fw_count == DEPT_W)
@@ -388,8 +387,8 @@ void forward_ntt2x2(bram *ram, bram *mul_ram, enum OPERATION mode, enum MAPPING 
     }
     for (int i = 0; i < DEPT_W; i++)
     {
-        fi = FIFO(DEPT_W, fifo_i, 0);
-        PIPO(w_pipo, DEPT_W * 4, fifo_w, w);
+        fi = FIFO<DEPT_W>(fifo_i, 0);
+        PIPO<DEPT_W * 4>(w_pipo, fifo_w, w);
         write_fifo(&a, &b, &c, &d, fifo_a, fifo_b, fifo_c, fifo_d, fw_count, mode, ram, ram_i);
         buttefly_circuit(&a, &b, &c, &d, w_pipo, w, mode);
         write_ram(ram, fi, a, b, c, d);
