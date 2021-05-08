@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include "params.h"
+#include "consts.h"
 
 /*  const int32_t zetas[DILITHIUM_N] = {
          0,    25847, -2608894,  -518909,   237124,  -777960,  -876248,   466468,

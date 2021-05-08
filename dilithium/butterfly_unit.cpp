@@ -78,8 +78,8 @@ void butterfly(int mode, int32_t *bj, int32_t *bjlen, const int32_t zeta,
         ajlen5 = ajlen4;
     }
 
-    *bj = (aj5 < 0) ? aj5 += DILITHIUM_Q : aj5;
-    *bjlen = (ajlen5 < 0) ? ajlen5 += DILITHIUM_Q : ajlen5;
+    *bj = (aj5 < 0) ? aj5 + DILITHIUM_Q : aj5;
+    *bjlen = (ajlen5 < 0) ? ajlen5 + DILITHIUM_Q : ajlen5;
 }
 
 void buttefly_circuit(int32_t *a, int32_t *b,
