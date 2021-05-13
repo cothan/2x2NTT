@@ -42,7 +42,7 @@ int ntt2x2_NTT(int32_t r_gold[DILITHIUM_N])
     // Load data into BRAM, 4 coefficients per line
     reshape(&ram, r_gold);
     // Compute NTT
-    ntt2x2_ntt(&ram, FORWARD_NTT_MODE, ENCODE_FALSE);
+    ntt2x2_ntt_forward(&ram, FORWARD_NTT_MODE, ENCODE_FALSE);
 
     // Run the reference code
     ntt(r_gold);
@@ -50,7 +50,7 @@ int ntt2x2_NTT(int32_t r_gold[DILITHIUM_N])
     // print_array(r_gold, 256, "r_gold");
     // print_reshaped_array(&ram, 64, "ram");
 
-    int ret = compare_bram_array(&ram, r_gold, "ntt2x2_NTT", ENCODE_TRUE, 0);
+    int ret = compare_bram_array(&ram, r_gold, "ntt2x2_NTT", ENCODE_TRUE, 1);
 
     return ret;
 }
@@ -123,8 +123,8 @@ int main()
     {
         for (int i = 0; i < DILITHIUM_N; i++)
         {
-            t1 = i;
-            // t1 = rand() % DILITHIUM_Q;
+            // t1 = i;
+            t1 = rand() % DILITHIUM_Q;
             r_invntt[i] = t1;
 
             t2 = rand() % DILITHIUM_Q;
@@ -136,17 +136,18 @@ int main()
             t4 = rand() % DILITHIUM_Q; 
             r_ntt_ref[i] = t4;
 
-            t5 = rand() % DILITHIUM_Q; 
+            // t5 = rand() % DILITHIUM_Q; 
+            t5 = i;
             r_ntt[i] = t5;
         }
 
         (void) test_ram;
         (void) r_mul;
         (void) r_ntt;
-        ret &= ntt2x2_MUL(r_mul, test_ram);
-        ret &= ntt2x2_INVNTT(r_invntt);
+        // ret &= ntt2x2_MUL(r_mul, test_ram);
+        // ret &= ntt2x2_INVNTT(r_invntt);
         // ret &= ntt2x2_NTT_ref(r_ntt_ref);
-        // ret &= ntt2x2_NTT(r_ntt);
+        ret &= ntt2x2_NTT(r_ntt);
 
         if (ret)
         {

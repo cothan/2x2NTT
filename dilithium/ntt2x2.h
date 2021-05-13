@@ -15,4 +15,6 @@ void ntt2x2_ntt(bram *ram, enum OPERATION mode, enum MAPPING mapping);
 
 void ntt2x2_mul(bram *ram, const bram *mul_ram, enum MAPPING mapping);
 
+void ntt2x2_ntt_forward(bram *ram, enum OPERATION mode, enum MAPPING mapping);
+
 #endif

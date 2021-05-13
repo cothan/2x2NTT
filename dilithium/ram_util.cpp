@@ -16,7 +16,7 @@ void write_ram(bram *ram, const int ram_i,
                const int32_t a, const int32_t b,
                const int32_t c, const int32_t d)
 {
-    // printf("[%d] < [%d, %d, %d, %d]\n", ram_i, a, b, c, d);
+    printf("[%d] < [%d, %d, %d, %d]\n", ram_i, a, b, c, d);
     ram->coeffs[ram_i][0] = a;
     ram->coeffs[ram_i][1] = b;
     ram->coeffs[ram_i][2] = c;

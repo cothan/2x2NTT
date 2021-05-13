@@ -16,7 +16,7 @@ const T MAX(const T a, const T b)
     return (a < b) ? b : a; // or: return comp(a,b)?b:a; for version (2)
 }
 
-void update_indexes(int tw_i[4], 
+void update_indexes(int tw_i[4],
                     const int tw_base_i[4],
                     const int s, enum OPERATION mode)
 {
@@ -65,8 +65,6 @@ void update_indexes(int tw_i[4],
     tw_i[3] = l4;
 }
 
-
-
 /* Forward & Inverse NTT
  * Input: ram, zetas_barret, mode, mapping
  * Output: ram 
@@ -94,7 +92,7 @@ void ntt2x2_ntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
     int32_t k, j;
 
     // Initialize coefficients
-    int32_t data_in[4] = {0}, 
+    int32_t data_in[4] = {0},
             data_out[4] = {0};
 
     // Initialize writeback
@@ -146,8 +144,6 @@ void ntt2x2_ntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             // Calculate
             buttefly_circuit_new(data_out, data_in,
                                  w1, w2, w3, w4, mode);
-                                // 1, 1, 1, 1, mode);
-            // memcpy(data_out, data_in, sizeof(data_out));
 
             /* ============================================== */
             // Rolling FIFO index
@@ -168,8 +164,6 @@ void ntt2x2_ntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             // print_array(fifo_c, DEPT_C, "FIFO_C");
             // print_array(fifo_d, DEPT_D, "FIFO_D");
 
-
-
             /* ============================================== */
             // Conditional writeback
             if (count == 3)
@@ -177,14 +171,14 @@ void ntt2x2_ntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
                 write_en = true;
             }
             count = (count + 1) & 3;
-            
+
             // Extract data from FIFO
             read_fifo(&fa, &fb, &fc, &fd, count, fifo_a, fifo_b, fifo_c, fifo_d);
 
             // Write back
             if (write_en)
             {
-                 write_ram(ram, fi, fa, fb, fc, fd);
+                write_ram(ram, fi, fa, fb, fc, fd);
             }
 
             /* ============================================== */
@@ -208,8 +202,8 @@ void ntt2x2_ntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
 
     for (auto i = 0; i < 3; i++)
     {
-#pragma HLS PIPELINE II=1
-        
+#pragma HLS PIPELINE II = 1
+
         /* ============================================== */
         // Emptying FIFO
         // Rolling FIFO index
@@ -235,5 +229,161 @@ void ntt2x2_ntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
         // print_array(fifo_b, DEPT_B, "FIFO_B");
         // print_array(fifo_c, DEPT_C, "FIFO_C");
         // print_array(fifo_d, DEPT_D, "FIFO_D");
+    }
+}
+
+void ntt2x2_ntt_forward(bram *ram, enum OPERATION mode, enum MAPPING mapping)
+{
+    // Initialize FIFO
+    int32_t fifo_i[DEPT_W] = {0};
+    int32_t fifo_a[DEPT_A] = {0};
+    int32_t fifo_b[DEPT_B] = {0};
+    int32_t fifo_c[DEPT_C] = {0};
+    int32_t fifo_d[DEPT_D] = {0};
+    int32_t fifo_w[DEPT_W][DEPT_W] = {0};
+    int32_t fa, fb, fc, fd;
+
+    // Initialize Forward NTT
+    int32_t fw_ntt_pattern[4] = {4, 2, 0, 4};
+    int32_t s, last = 0;
+
+    // Initialize twiddle
+    int32_t tw_i[4] = {0}, tw_base_i[4] = {0};
+    int32_t w1, w2, w3, w4;
+    int32_t w[4];
+
+    // Intialize index
+    int32_t k, j;
+
+    // Initialize coefficients
+    int32_t data_in[4] = {0},
+            data_out[4] = {0},
+            data_fifo[4] = {0};
+
+    // Initialize writeback
+    auto count = 0;
+    bool write_en = false;
+
+    for (auto l = 0; l < DILITHIUM_LOGN; l += 2)
+    {
+        for (auto i = 0; i < DILITHIUM_N / 4; ++i)
+        {
+#pragma HLS LOOP_FLATTEN
+#pragma HLS PIPELINE II = 1
+            /* ============================================== */
+
+            if (i == 0)
+            {
+                k = j = 0;
+            }
+
+            if (mode == FORWARD_NTT_MODE)
+            {
+                // s = fw_ntt_pattern[l >> 1];
+                s = l;
+            }
+            else
+            {
+                s = l;
+            }
+
+            /* ============================================== */
+
+            auto addr = k + j;
+
+            // Prepare address
+            auto ram_i = resolve_address(mapping, addr);
+
+            // Read ram by address
+            read_ram(&data_fifo[0], &data_fifo[1],
+                     &data_fifo[2], &data_fifo[3],
+                     ram, ram_i);
+
+            // Write data_fifo to FIFO
+            write_fifo(data_in, data_fifo, fifo_a,
+                       fifo_b, fifo_c, fifo_d, count);
+
+            // Prepare twiddle
+            resolve_twiddle(tw_i, &last, tw_base_i, k, s, mode);
+
+            // Read Twiddle
+            read_twiddle(&w1, &w2, &w3, &w4, mode, tw_i);
+
+            /* ============================================== */
+            // Rolling FIFO
+            auto fi = FIFO<DEPT_W>(fifo_i, ram_i);
+
+            printf("--------------%d\n", count);
+            print_array(tw_i, 4, "twiddle");
+            print_array(fifo_i, DEPT_W, "FIFO_I");
+            print_array(fifo_a, DEPT_A, "FIFO_A");
+            print_array(fifo_b, DEPT_B, "FIFO_B");
+            print_array(fifo_c, DEPT_C, "FIFO_C");
+            print_array(fifo_d, DEPT_D, "FIFO_D");
+            print_array(data_in, 4, "data_in");
+
+            PIPO<DEPT_W>(w, fifo_w, w1, w2, w3, w4);
+            /* ============================================== */
+
+            // Calculate
+            buttefly_circuit_new(data_out, data_in,
+                                 w[0], w[1], w[2], w[3], mode);
+
+            /* ============================================== */
+
+
+            if (count == DEPT_W)
+            {
+                write_en = true;
+            }
+            count = (count + 1);
+
+            if (write_en)
+            {
+                write_ram(ram, fi, data_out[0], data_out[1],
+                          data_out[2], data_out[3]);
+            }
+
+            /* ============================================== */
+            // Update loop
+            auto si = fw_ntt_pattern[l >> 1];
+            if (k + (1 << si) < DILITHIUM_N / 4)
+            {
+                k += (1 << si);
+            }
+            else
+            {
+                k = 0;
+                ++j;
+            }
+
+            update_indexes(tw_i, tw_base_i, s, mode);
+        }
+        /* ============================================== */
+    }
+
+    data_fifo[0] = 0;
+    data_fifo[1] = 0;
+    data_fifo[2] = 0;
+    data_fifo[3] = 0;
+
+    for (auto i = 0; i < 4; i++)
+    {
+        // Write data_fifo to FIFO
+        write_fifo(data_in, data_fifo, fifo_a,
+                   fifo_b, fifo_c, fifo_d, count);
+
+        // Rolling FIFO
+        auto fi = FIFO<DEPT_W>(fifo_i, 0);
+
+        // Buffer twiddle
+        PIPO<DEPT_W>(w, fifo_w, 0, 1, 2, 3);
+
+        buttefly_circuit_new(data_out, data_in,
+                             w[0], w[1], w[2], w[3], mode);
+
+        // Write back
+        write_ram(ram, fi, data_out[0], data_out[1],
+                  data_out[2], data_out[3]);
     }
 }

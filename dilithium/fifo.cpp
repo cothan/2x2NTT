@@ -96,74 +96,20 @@ void read_fifo(int32_t *fa, int32_t *fb,
 
 #include "util.h"
 
-void write_fifo(int32_t *a, int32_t *b, int32_t *c, int32_t *d,
+
+void write_fifo(int32_t data_in[4], const int32_t data_fifo[4],
                 int32_t fifo_a[DEPT_A], int32_t fifo_b[DEPT_B],
                 int32_t fifo_c[DEPT_C], int32_t fifo_d[DEPT_D],
-                const int count, enum OPERATION mode,
-                const bram *ram, const int index)
-{
-    int32_t fa, fb, fc, fd;
-    int32_t ta, tb, tc, td;
-    int32_t a_en = 0, b_en = 0, c_en = 0, d_en = 0;
-    const int32_t *line = ram->coeffs[index];
-
-    ta = *a;
-    tb = *b;
-    tc = *c;
-    td = *d;
-
-    switch (count & 3)
-    {
-        // Use PISO to write
-    case 0:
-        // Write to FIFO_D
-        d_en = 1;
-        break;
-    case 1:
-        // Write to FIFO_B
-        b_en = 1;
-        break;
-    case 2:
-        // Write to FIFO_C
-        c_en = 1;
-        break;
-
-    default:
-        // Write to FIFO_A
-        a_en = 1;
-        break;
-    }
-    a_en &= (mode == FORWARD_NTT_MODE);
-    b_en &= (mode == FORWARD_NTT_MODE);
-    c_en &= (mode == FORWARD_NTT_MODE);
-    d_en &= (mode == FORWARD_NTT_MODE);
-
-    fd = FIFO_PISO<DEPT_A>(fifo_a, a_en, ta, line);
-    fb = FIFO_PISO<DEPT_B>(fifo_b, b_en, tb, line);
-    fc = FIFO_PISO<DEPT_C>(fifo_c, c_en, tc, line);
-    fa = FIFO_PISO<DEPT_D>(fifo_d, d_en, td, line);
-
-    *a = fa;
-    *b = fc;
-    *c = fb;
-    *d = fd;
-}
-
-void write_fifo(int32_t data_fifo[4], const int32_t data_out[4],
-                int32_t fifo_a[DEPT_A], int32_t fifo_b[DEPT_B],
-                int32_t fifo_c[DEPT_C], int32_t fifo_d[DEPT_D],
-                const int count, enum OPERATION mode,
-                const bram *ram, const int index)
+                const int count)
 {
     int32_t fa, fb, fc, fd;
     int32_t ta, tb, tc, td;
     bool a_en = false, b_en = false, c_en = false, d_en = false;
-    const int32_t *line = ram->coeffs[index];
 
-    ta = data_out[0];
-    tb = data_out[1];
-    tc = data_out[2];
-    td = data_out[3];
+    ta = data_fifo[0];
+    tb = data_fifo[1];
+    tc = data_fifo[2];
+    td = data_fifo[3];
 
     switch (count & 3)
     {
@@ -181,23 +127,27 @@ void write_fifo(int32_t data_fifo[4], const int32_t data_out[4],
         c_en = true;
         break;
 
-    default:
+    case 3:
         // Write to FIFO_A
         a_en = true;
         break;
+    
+    default: 
+        printf("Error, suspect overflow\n");
+        break;
     }
-    a_en &= (mode == FORWARD_NTT_MODE);
-    b_en &= (mode == FORWARD_NTT_MODE);
-    c_en &= (mode == FORWARD_NTT_MODE);
-    d_en &= (mode == FORWARD_NTT_MODE);
+    // a_en &= (mode == FORWARD_NTT_MODE);
+    // b_en &= (mode == FORWARD_NTT_MODE);
+    // c_en &= (mode == FORWARD_NTT_MODE);
+    // d_en &= (mode == FORWARD_NTT_MODE);
 
-    fd = FIFO_PISO<DEPT_A>(fifo_a, a_en, ta, line);
-    fb = FIFO_PISO<DEPT_B>(fifo_b, b_en, tb, line);
-    fc = FIFO_PISO<DEPT_C>(fifo_c, c_en, tc, line);
-    fa = FIFO_PISO<DEPT_D>(fifo_d, d_en, td, line);
+    fd = FIFO_PISO<DEPT_A>(fifo_a, a_en, data_fifo);
+    fb = FIFO_PISO<DEPT_B>(fifo_b, b_en, data_fifo);
+    fc = FIFO_PISO<DEPT_C>(fifo_c, c_en, data_fifo);
+    fa = FIFO_PISO<DEPT_D>(fifo_d, d_en, data_fifo);
 
-    data_fifo[0] = fa;
-    data_fifo[1] = fc;
-    data_fifo[2] = fb;
-    data_fifo[3] = fd;
+    data_in[0] = fa;
+    data_in[1] = fc;
+    data_in[2] = fb;
+    data_in[3] = fd;
 }

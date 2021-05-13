@@ -58,38 +58,42 @@ void read_fifo(int32_t *fa, int32_t *fb,
 /* Parallel in, parallel out: This function receive 4 elements at the begin of FIFO. 
  */
 template <int DEPT>
-void PIPO(int32_t out[4], int32_t fifo[DEPT], const int32_t w[4])
+void PIPO(int32_t out[4], int32_t fifo[DEPT][DEPT], 
+                const int32_t w1, const int32_t w2, 
+                const int32_t w3, const int32_t w4)
 {
-    out[0] = fifo[DEPT - 1];
-    out[1] = fifo[DEPT - 2];
-    out[2] = fifo[DEPT - 3];
-    out[3] = fifo[DEPT - 4];
+    out[0] = fifo[DEPT - 1][0];
+    out[1] = fifo[DEPT - 1][1];
+    out[2] = fifo[DEPT - 1][2];
+    out[3] = fifo[DEPT - 1][3];
 
-    for (int i = DEPT - 1; i > 3; i--)
+    for (auto i = DEPT - 1; i > 0; i--)
     {
         // printf("%d <= %d\n", i, i - 1);
-        fifo[i] = fifo[i - 4];
+        for (auto j = 0; j < DEPT; j++)
+        {
+#pragma HLS LOOP_FLATTEN
+#pragma HLS UNROLL
+            fifo[i][j] = fifo[i - 1][j];
+        }
     }
-    fifo[3] = w[0];
-    fifo[2] = w[1];
-    fifo[1] = w[2];
-    fifo[0] = w[3];
+    fifo[0][0] = w1;
+    fifo[0][1] = w2;
+    fifo[0][2] = w3;
+    fifo[0][3] = w4;
 }
 
-
-void write_fifo(int32_t *a, int32_t *b, int32_t *c, int32_t *d,
+void write_fifo(int32_t data_in[4], const int32_t data_fifo[4],
                 int32_t fifo_a[DEPT_A], int32_t fifo_b[DEPT_B],
                 int32_t fifo_c[DEPT_C], int32_t fifo_d[DEPT_D],
-                const int count, enum OPERATION mode,
-                const bram *ram, const int index);
+                const int count);
 
 int32_t FIFO_I(const int dept, int32_t *fifo,
                const int32_t new_value, enum OPERATION mode);
 
-
 template <int DEPT>
 int32_t FIFO_PISO(int32_t fifo[DEPT], const int piso_en,
-                  const int32_t new_value, const int32_t line[4])
+                  const int32_t line[4])
 {
     int32_t out = fifo[DEPT - 1];
     for (int i = DEPT - 1; i > 3; i--)
@@ -108,7 +112,7 @@ int32_t FIFO_PISO(int32_t fifo[DEPT], const int piso_en,
         fifo[3] = fifo[2];
         fifo[2] = fifo[1];
         fifo[1] = fifo[0];
-        fifo[0] = new_value;
+        fifo[0] = 0;
     }
     return out;
 }
