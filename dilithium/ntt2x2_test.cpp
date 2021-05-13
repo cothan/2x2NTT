@@ -14,28 +14,6 @@
 /* 
  * Forward NTT Test, this function give correct result as in reference Forward NTT 
  */
-int ntt2x2_NTT_ref(int32_t r_gold[DILITHIUM_N])
-{
-    bram ram;
-    // Load data into BRAM, 4 coefficients per line
-    reshape(&ram, r_gold);
-    // Compute NTT
-    ntt2x2_ntt(&ram, FORWARD_NTT_MODE, ENCODE_FALSE);
-
-    // Run the reference code
-    ntt(r_gold);
-
-    // print_array(r_gold, 256, "r_gold");
-    // print_reshaped_array(&ram, 64, "ram");
-
-    int ret = compare_bram_array(&ram, r_gold, "ntt2x2_NTT_ref", ENCODE_TRUE, 0);
-
-    return ret;
-}
-
-/* 
- * Forward NTT Test, this function give correct result as in reference Forward NTT 
- */
 int ntt2x2_NTT(int32_t r_gold[DILITHIUM_N])
 {
     bram ram;
@@ -50,7 +28,7 @@ int ntt2x2_NTT(int32_t r_gold[DILITHIUM_N])
     // print_array(r_gold, 256, "r_gold");
     // print_reshaped_array(&ram, 64, "ram");
 
-    int ret = compare_bram_array(&ram, r_gold, "ntt2x2_NTT", ENCODE_TRUE, 1);
+    int ret = compare_bram_array(&ram, r_gold, "ntt2x2_NTT", ENCODE_TRUE, 0);
 
     return ret;
 }
@@ -105,7 +83,7 @@ int ntt2x2_MUL(int32_t r_mul[DILITHIUM_N], int32_t test_ram[DILITHIUM_N])
     return ret;
 }
 
-#define TESTS 1
+#define TESTS 100
 
 int main()
 {
@@ -114,9 +92,8 @@ int main()
     int32_t r_invntt[DILITHIUM_N], 
             r_mul[DILITHIUM_N], 
             test_ram[DILITHIUM_N], 
-            r_ntt[DILITHIUM_N],
-            r_ntt_ref[DILITHIUM_N];
-    int32_t t1, t2, t3, t4, t5;
+            r_ntt[DILITHIUM_N];
+    int32_t t1, t2, t3, t4;
     int ret = 1;
 
     for (int k = 0; k < TESTS; k++)
@@ -134,19 +111,11 @@ int main()
             test_ram[i] = t3;
 
             t4 = rand() % DILITHIUM_Q; 
-            r_ntt_ref[i] = t4;
-
-            // t5 = rand() % DILITHIUM_Q; 
-            t5 = i;
-            r_ntt[i] = t5;
+            r_ntt[i] = t4;
         }
 
-        (void) test_ram;
-        (void) r_mul;
-        (void) r_ntt;
-        // ret &= ntt2x2_MUL(r_mul, test_ram);
-        // ret &= ntt2x2_INVNTT(r_invntt);
-        // ret &= ntt2x2_NTT_ref(r_ntt_ref);
+        ret &= ntt2x2_MUL(r_mul, test_ram);
+        ret &= ntt2x2_INVNTT(r_invntt);
         ret &= ntt2x2_NTT(r_ntt);
 
         if (ret)
@@ -166,11 +135,3 @@ int main()
 
     return ret;
 }
-
-/* 
- * Combine GS and CT butterfly  unit: DONE 
- * Replace Montgomery to Barrett reduction: DONE 
- * Divide by 2 in inverse NTT: No yet 
- * Find algorithm to compute fast bit-reverse permutation for Forward NTT: 
- * What the point of merging forward and inverse butterfly unit?
- */

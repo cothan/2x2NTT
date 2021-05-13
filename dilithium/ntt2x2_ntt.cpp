@@ -111,16 +111,6 @@ void ntt2x2_ntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
                 k = j = 0;
             }
 
-            if (mode == FORWARD_NTT_MODE)
-            {
-                s = fw_ntt_pattern[l >> 1];
-            }
-            else
-            {
-                s = l;
-            }
-
-            // printf("%d %d %d %d\n", l, i, k, j);
             /* ============================================== */
 
             auto addr = k + j;
@@ -134,7 +124,7 @@ void ntt2x2_ntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
                      ram, ram_i);
 
             // Prepare twiddle
-            resolve_twiddle(tw_i, &last, tw_base_i, k, s, mode);
+            resolve_twiddle(tw_i, &last, tw_base_i, k, l, mode);
 
             // Read twiddle
             read_twiddle(&w1, &w2, &w3, &w4, mode, tw_i);
@@ -155,15 +145,6 @@ void ntt2x2_ntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             FIFO<DEPT_C>(fifo_c, data_out[2]);
             FIFO<DEPT_D>(fifo_d, data_out[3]);
 
-            // printf("--------------\n");
-            // print_array(data_out, 4, "data_out");
-            // print_array(data_in, 4, "data_in");
-            // print_array(fifo_i, DEPT_I, "FIFO_I");
-            // print_array(fifo_a, DEPT_A, "FIFO_A");
-            // print_array(fifo_b, DEPT_B, "FIFO_B");
-            // print_array(fifo_c, DEPT_C, "FIFO_C");
-            // print_array(fifo_d, DEPT_D, "FIFO_D");
-
             /* ============================================== */
             // Conditional writeback
             if (count == 3)
@@ -182,6 +163,15 @@ void ntt2x2_ntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             }
 
             /* ============================================== */
+            if (mode == FORWARD_NTT_MODE)
+            {
+                s = fw_ntt_pattern[l >> 1];
+            }
+            else
+            {
+                s = l;
+            }
+
             // Update loop
             if (k + (1 << s) < DILITHIUM_N / 4)
             {
@@ -193,9 +183,7 @@ void ntt2x2_ntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
                 ++j;
             }
 
-            update_indexes(tw_i, tw_base_i, s, mode);
-
-            // printf("%d \n", addr);
+            update_indexes(tw_i, tw_base_i, l, mode);
         }
         /* ============================================== */
     }
@@ -241,7 +229,6 @@ void ntt2x2_ntt_forward(bram *ram, enum OPERATION mode, enum MAPPING mapping)
     int32_t fifo_c[DEPT_C] = {0};
     int32_t fifo_d[DEPT_D] = {0};
     int32_t fifo_w[DEPT_W][DEPT_W] = {0};
-    int32_t fa, fb, fc, fd;
 
     // Initialize Forward NTT
     int32_t fw_ntt_pattern[4] = {4, 2, 0, 4};
@@ -277,16 +264,6 @@ void ntt2x2_ntt_forward(bram *ram, enum OPERATION mode, enum MAPPING mapping)
                 k = j = 0;
             }
 
-            if (mode == FORWARD_NTT_MODE)
-            {
-                // s = fw_ntt_pattern[l >> 1];
-                s = l;
-            }
-            else
-            {
-                s = l;
-            }
-
             /* ============================================== */
 
             auto addr = k + j;
@@ -304,7 +281,7 @@ void ntt2x2_ntt_forward(bram *ram, enum OPERATION mode, enum MAPPING mapping)
                        fifo_b, fifo_c, fifo_d, count);
 
             // Prepare twiddle
-            resolve_twiddle(tw_i, &last, tw_base_i, k, s, mode);
+            resolve_twiddle(tw_i, &last, tw_base_i, k, l, mode);
 
             // Read Twiddle
             read_twiddle(&w1, &w2, &w3, &w4, mode, tw_i);
@@ -313,14 +290,14 @@ void ntt2x2_ntt_forward(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             // Rolling FIFO
             auto fi = FIFO<DEPT_W>(fifo_i, ram_i);
 
-            printf("--------------%d\n", count);
-            print_array(tw_i, 4, "twiddle");
-            print_array(fifo_i, DEPT_W, "FIFO_I");
-            print_array(fifo_a, DEPT_A, "FIFO_A");
-            print_array(fifo_b, DEPT_B, "FIFO_B");
-            print_array(fifo_c, DEPT_C, "FIFO_C");
-            print_array(fifo_d, DEPT_D, "FIFO_D");
-            print_array(data_in, 4, "data_in");
+            // printf("--------------%d\n", count);
+            // print_array(tw_i, 4, "twiddle");
+            // print_array(fifo_i, DEPT_W, "FIFO_I");
+            // print_array(fifo_a, DEPT_A, "FIFO_A");
+            // print_array(fifo_b, DEPT_B, "FIFO_B");
+            // print_array(fifo_c, DEPT_C, "FIFO_C");
+            // print_array(fifo_d, DEPT_D, "FIFO_D");
+            // print_array(data_in, 4, "data_in");
 
             PIPO<DEPT_W>(w, fifo_w, w1, w2, w3, w4);
             /* ============================================== */
@@ -330,7 +307,6 @@ void ntt2x2_ntt_forward(bram *ram, enum OPERATION mode, enum MAPPING mapping)
                                  w[0], w[1], w[2], w[3], mode);
 
             /* ============================================== */
-
 
             if (count == DEPT_W)
             {
@@ -346,10 +322,18 @@ void ntt2x2_ntt_forward(bram *ram, enum OPERATION mode, enum MAPPING mapping)
 
             /* ============================================== */
             // Update loop
-            auto si = fw_ntt_pattern[l >> 1];
-            if (k + (1 << si) < DILITHIUM_N / 4)
+            if (mode == FORWARD_NTT_MODE)
             {
-                k += (1 << si);
+                s = fw_ntt_pattern[l >> 1];
+            }
+            else
+            {
+                s = l;
+            }
+
+            if (k + (1 << s) < DILITHIUM_N / 4)
+            {
+                k += (1 << s);
             }
             else
             {
@@ -357,15 +341,10 @@ void ntt2x2_ntt_forward(bram *ram, enum OPERATION mode, enum MAPPING mapping)
                 ++j;
             }
 
-            update_indexes(tw_i, tw_base_i, s, mode);
+            update_indexes(tw_i, tw_base_i, l, mode);
         }
         /* ============================================== */
     }
-
-    data_fifo[0] = 0;
-    data_fifo[1] = 0;
-    data_fifo[2] = 0;
-    data_fifo[3] = 0;
 
     for (auto i = 0; i < 4; i++)
     {

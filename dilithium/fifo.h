@@ -2,12 +2,12 @@
 #define FIFO_H
 
 #include <stdint.h>
-#include "ntt2x2.h"
 #include <cstdio>
+#include "params.h"
 
 // Don't change this
-#define DEPT_W 4
 #define DEPT_I 3
+#define DEPT_W 4
 #define DEPT_A 4
 #define DEPT_B 6
 #define DEPT_C 5
@@ -47,20 +47,12 @@ int32_t PISO(int32_t fifo[DEPT], const int32_t line[4])
     return out;
 }
 
-void read_fifo(int32_t *fa, int32_t *fb,
-               int32_t *fc, int32_t *fd,
-               const int count,
-               const int32_t fifo_a[DEPT_A],
-               const int32_t fifo_b[DEPT_B],
-               const int32_t fifo_c[DEPT_C],
-               const int32_t fifo_d[DEPT_D]);
-
 /* Parallel in, parallel out: This function receive 4 elements at the begin of FIFO. 
  */
 template <int DEPT>
-void PIPO(int32_t out[4], int32_t fifo[DEPT][DEPT], 
-                const int32_t w1, const int32_t w2, 
-                const int32_t w3, const int32_t w4)
+void PIPO(int32_t out[4], int32_t fifo[DEPT][DEPT],
+          const int32_t w1, const int32_t w2,
+          const int32_t w3, const int32_t w4)
 {
     out[0] = fifo[DEPT - 1][0];
     out[1] = fifo[DEPT - 1][1];
@@ -82,11 +74,6 @@ void PIPO(int32_t out[4], int32_t fifo[DEPT][DEPT],
     fifo[0][2] = w3;
     fifo[0][3] = w4;
 }
-
-void write_fifo(int32_t data_in[4], const int32_t data_fifo[4],
-                int32_t fifo_a[DEPT_A], int32_t fifo_b[DEPT_B],
-                int32_t fifo_c[DEPT_C], int32_t fifo_d[DEPT_D],
-                const int count);
 
 int32_t FIFO_I(const int dept, int32_t *fifo,
                const int32_t new_value, enum OPERATION mode);
@@ -116,5 +103,18 @@ int32_t FIFO_PISO(int32_t fifo[DEPT], const int piso_en,
     }
     return out;
 }
+
+void read_fifo(int32_t *fa, int32_t *fb,
+               int32_t *fc, int32_t *fd,
+               const int count,
+               const int32_t fifo_a[DEPT_A],
+               const int32_t fifo_b[DEPT_B],
+               const int32_t fifo_c[DEPT_C],
+               const int32_t fifo_d[DEPT_D]);
+
+void write_fifo(int32_t data_in[4], const int32_t data_fifo[4],
+                int32_t fifo_a[DEPT_A], int32_t fifo_b[DEPT_B],
+                int32_t fifo_c[DEPT_C], int32_t fifo_d[DEPT_D],
+                const int count);
 
 #endif
