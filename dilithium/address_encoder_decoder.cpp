@@ -1,5 +1,6 @@
 #include "params.h"
 #include <stdio.h>
+#include <stdint.h>
 
 /* Lazy, avoid transpose the matrix */
 int addr_decoder(int addr_in)
@@ -69,7 +70,7 @@ int resolve_address(enum MAPPING mapping, int addr)
     case DECODE_TRUE:
         ram_i = addr_decoder(addr);
         break;
-    
+
     case ENCODE_TRUE:
         ram_i = addr_encoder(addr);
         break;
@@ -79,4 +80,81 @@ int resolve_address(enum MAPPING mapping, int addr)
         break;
     }
     return ram_i;
+}
+
+void resolve_twiddle(int32_t tw_i[4], int *last, int32_t tw_base_i[4],
+                    const int k, const int s, enum OPERATION mode)
+{
+    int l1, l2, l3, l4;
+    int l1_base, l2_base, l3_base, l4_base;
+    int t_last = *last;
+    if (mode == INVERSE_NTT_MODE)
+    {
+        l1_base = (DILITHIUM_N >> s) - 1;
+        l2_base = (DILITHIUM_N >> s) - 2;
+        l3_base = l4_base = (DILITHIUM_N >> (s + 1)) - 1;
+
+        // INVERSE_NTT_MODE
+        // Layer s
+        l1 = l1_base;
+        l2 = l2_base;
+        // Layer s + 1
+        l3 = l3_base;
+        l4 = l4_base;
+
+        if (k == 0)
+        {
+            tw_i[0] = l1;
+            tw_i[1] = l2;
+            tw_i[2] = l3;
+            tw_i[3] = l4;
+
+            tw_base_i[0] = l1_base;
+            tw_base_i[1] = l2_base;
+            tw_base_i[2] = l3_base;
+            tw_base_i[3] = l4_base;
+        }
+    }
+    else if (mode == FORWARD_NTT_MODE)
+    {
+        l1_base = l2_base = 1 << s;
+        l3_base = (1 << (s + 1));
+        l4_base = (1 << (s + 1)) + 1;
+
+        // FORWARD_NTT_MODE
+        // Layer s
+        l1 = l1_base;
+        l2 = l2_base;
+        // Layer s + 1
+        l3 = l3_base;
+        l4 = l4_base;
+
+        if (s < 6 && k == 0)
+        {
+            tw_i[0] = l1;
+            tw_i[1] = l2;
+            tw_i[2] = l3;
+            tw_i[3] = l4;
+
+            tw_base_i[0] = l1_base;
+            tw_base_i[1] = l2_base;
+            tw_base_i[2] = l3_base;
+            tw_base_i[3] = l4_base;
+        }
+        // FORWARD_NTT_MODE
+        else if (s >= 6 && !t_last)
+        {
+            *last = 1;
+
+            tw_i[0] = l1;
+            tw_i[1] = l2;
+            tw_i[2] = l3;
+            tw_i[3] = l4;
+
+            tw_base_i[0] = l1_base;
+            tw_base_i[1] = l2_base;
+            tw_base_i[2] = l3_base;
+            tw_base_i[3] = l4_base;
+        }
+    }
 }

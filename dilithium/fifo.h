@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "ntt2x2.h"
+#include <cstdio>
 
 // Don't change this
 #define DEPT_W 4
@@ -18,8 +19,9 @@ template <int DEPT>
 int32_t FIFO(int32_t fifo[DEPT], const int32_t new_value)
 {
     int32_t out = fifo[DEPT - 1];
-    for (int i = DEPT - 1; i > 0; i--)
+    for (auto i = DEPT - 1; i > 0; i--)
     {
+        // printf("%d <= %d\n", i, i-1);
         fifo[i] = fifo[i - 1];
     }
     fifo[0] = new_value;
@@ -47,12 +49,11 @@ int32_t PISO(int32_t fifo[DEPT], const int32_t line[4])
 
 void read_fifo(int32_t *fa, int32_t *fb,
                int32_t *fc, int32_t *fd,
-               const int count, enum OPERATION mode,
+               const int count,
                const int32_t fifo_a[DEPT_A],
                const int32_t fifo_b[DEPT_B],
                const int32_t fifo_c[DEPT_C],
                const int32_t fifo_d[DEPT_D]);
-
 
 /* Parallel in, parallel out: This function receive 4 elements at the begin of FIFO. 
  */

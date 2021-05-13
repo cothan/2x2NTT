@@ -1,9 +1,9 @@
 #include "params.h"
 #include <stdint.h>
 
-static 
-void butterfly(int mode, int32_t *bj, int32_t *bjlen,
-                const int32_t zeta, const int32_t aj, const int32_t ajlen)
+static void butterfly(int mode, int32_t *bj, int32_t *bjlen,
+                      const int32_t zeta, 
+                      const int32_t aj, const int32_t ajlen)
 {
     static int32_t aj1, ajlen1;
     static int32_t aj2, ajlen2;
@@ -198,5 +198,88 @@ void buttefly_circuit(int32_t *a, int32_t *b,
         *b = b3;
         *c = c3;
         *d = d3;
+    }
+}
+
+void buttefly_circuit_new(int32_t data_out[4],
+                          const int32_t data_in[4],
+                          const int32_t w1, const int32_t w2,
+                          const int32_t w3, const int32_t w4,
+                          enum OPERATION mode)
+{
+    // 4 pipeline stages
+    int32_t save_b, save_d;
+    int32_t a0, b0, c0, d0;
+    int32_t a1, b1, c1, d1;
+    int32_t a2, b2, c2, d2;
+    int32_t a3, b3, c3, d3;
+
+    a0 = data_in[0];
+    b0 = data_in[1];
+    c0 = data_in[2];
+    d0 = data_in[3];
+
+    /* For debugging purpose
+    if ((ram_i < 64 || ram_i > 192) && (s > 2))
+    {
+        // index
+        printf("%d, %d | %d\n", ram_i, ram_i + 1, i1);
+        printf("%d, %d | %d\n", ram_i + 2, ram_i + 3, i2);
+        // value
+        printf("%d %d | %d\n", a, b, i1);
+        printf("%d %d | %d\n", c, d, i2);
+    } */
+
+    butterfly(mode, &a1, &b1, w1, a0, b0);
+    butterfly(mode, &c1, &d1, w2, c0, d0);
+
+    save_b = b1;
+    save_d = d1;
+
+    a2 = a1;
+    c2 = b1;
+
+    if (mode == MUL_MODE)
+    {
+        // switch lane A -> B, C->D
+        b2 = a1;
+        d2 = c1;
+    }
+    else
+    {
+        b2 = c1;
+        d2 = d1;
+    }
+
+    /* For debugging purpose
+    if ((ram_i < 64 || ram_i > 192) && (s > 2))
+    {
+        // index
+        printf("%d, %d | %d\n", ram_i, ram_i + 2, i3);
+        printf("%d, %d | %d\n", ram_i + 1, ram_i + 3, i4);
+        // value
+        printf("%d %d | %d\n", a, b, i3);
+        printf("%d %d | %d\n", c, d, i4);
+        printf("==============================%d %d | %d %d\n", ram_i / 4, ram_i, j, k);
+    } */
+
+    butterfly(mode, &a3, &b3, w3, a2, b2);
+    butterfly(mode, &c3, &d3, w4, c2, d2);
+
+    if (mode == MUL_MODE)
+    {
+        // switch lane again, B->A, D->C
+        data_out[0] = b3;
+        data_out[1] = save_b;
+        data_out[2] = d3;
+        data_out[3] = save_d;
+    }
+    else
+    {
+        // NTT Mode
+        data_out[0] = a3;
+        data_out[1] = b3;
+        data_out[2] = c3;
+        data_out[3] = d3;
     }
 }

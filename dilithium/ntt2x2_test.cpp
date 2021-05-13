@@ -20,7 +20,7 @@ int ntt2x2_NTT_ref(int32_t r_gold[DILITHIUM_N])
     // Load data into BRAM, 4 coefficients per line
     reshape(&ram, r_gold);
     // Compute NTT
-    forward_ntt2x2(&ram, 0, FORWARD_NTT_MODE, ENCODE_FALSE);
+    ntt2x2_ntt(&ram, FORWARD_NTT_MODE, ENCODE_FALSE);
 
     // Run the reference code
     ntt(r_gold);
@@ -42,7 +42,7 @@ int ntt2x2_NTT(int32_t r_gold[DILITHIUM_N])
     // Load data into BRAM, 4 coefficients per line
     reshape(&ram, r_gold);
     // Compute NTT
-    ntt2x2(&ram, 0, FORWARD_NTT_MODE, ENCODE_FALSE);
+    ntt2x2_ntt(&ram, FORWARD_NTT_MODE, ENCODE_FALSE);
 
     // Run the reference code
     ntt(r_gold);
@@ -65,7 +65,7 @@ int ntt2x2_INVNTT(int32_t r_gold[DILITHIUM_N])
     // Load data into BRAM, 4 coefficients per line
     reshape(&ram, r_gold);
     // Compute NTT
-    ntt2x2(&ram, 0, INVERSE_NTT_MODE, DECODE_FALSE);
+    ntt2x2_ntt(&ram, INVERSE_NTT_MODE, DECODE_FALSE);
 
     // Run the reference code
     invntt_tomont(r_gold);
@@ -94,7 +94,7 @@ int ntt2x2_MUL(int32_t r_mul[DILITHIUM_N], int32_t test_ram[DILITHIUM_N])
     // MUL Operation using NTT
     // Enable DECODE_TRUE only after NTT transform
     // This example we only do pointwise multiplication
-    ntt2x2(&ram, &mul_ram, MUL_MODE, DECODE_FALSE);
+    ntt2x2_mul(&ram, &mul_ram, DECODE_FALSE);
 
     // Run the reference code
     pointwise_montgomery(r_mul, r_mul, test_ram);
@@ -123,8 +123,8 @@ int main()
     {
         for (int i = 0; i < DILITHIUM_N; i++)
         {
-            // t1 = i;
-            t1 = rand() % DILITHIUM_Q;
+            t1 = i;
+            // t1 = rand() % DILITHIUM_Q;
             r_invntt[i] = t1;
 
             t2 = rand() % DILITHIUM_Q;
@@ -143,9 +143,9 @@ int main()
         (void) test_ram;
         (void) r_mul;
         (void) r_ntt;
-        ret &= ntt2x2_INVNTT(r_invntt);
         ret &= ntt2x2_MUL(r_mul, test_ram);
-        ret &= ntt2x2_NTT_ref(r_ntt_ref);
+        ret &= ntt2x2_INVNTT(r_invntt);
+        // ret &= ntt2x2_NTT_ref(r_ntt_ref);
         // ret &= ntt2x2_NTT(r_ntt);
 
         if (ret)

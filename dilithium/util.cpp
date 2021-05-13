@@ -87,7 +87,7 @@ int compare_bram_array(bram *ram, int32_t array[DILITHIUM_N], const char *string
         if ( (ta != a) || (tb != b) || (tc != c) || (td != d) )
         {
             printf("%s Error at index: %d => %d\n", string, i, addr);
-            printf("%12d | %12d | %12d | %12d\n", a, b, c, d);
+            printf("%12d | %12d | %12d | %12d [*]\n", a, b, c, d);
             printf("%12d | %12d | %12d | %12d\n", ta, tb, tc, td);
             error = 1;
             break;
