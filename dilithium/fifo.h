@@ -46,8 +46,6 @@ void PIPO(T out[4], T fifo[DEPT][DEPT],
         // printf("%d <= %d\n", i, i - 1);
         for (auto j = 0; j < DEPT; j++)
         {
-#pragma HLS LOOP_FLATTEN
-#pragma HLS UNROLL
             fifo[i][j] = fifo[i - 1][j];
         }
     }
@@ -131,7 +129,8 @@ void read_fifo(T *fa, T *fb,
 
 /* This module rolling FIFO base on operation mode: FWD_NTT or INV_NTT
  * Input: 
- * data_fifo[4]: Data to be written to FIFO
+ * data_fifo[4]: 4 coefficients to be written to FIFO in parallel-in style
+ * new_value[4]: Each coefficient is written to FIFO in FIFO style
  * FIFO_A/B/C/D: Pre-defined FIFO
  * count: select which FIFO to be written
  * Output:
@@ -139,13 +138,17 @@ void read_fifo(T *fa, T *fb,
  */
 template <typename T>
 void write_fifo(enum OPERATION mode,
-                T data_out[4], const T data_in[4],
+                T data_out[4], 
+                const T data_in[4], const T new_value[4],
                 T fifo_a[DEPT_A], T fifo_b[DEPT_B],
                 T fifo_c[DEPT_C], T fifo_d[DEPT_D],
                 const int count)
 {
     T fa, fb, fc, fd;
-    bool a_en = false, b_en = false, c_en = false, d_en = false;
+    bool a_en = false,
+         b_en = false,
+         c_en = false,
+         d_en = false;
 
     switch (count & 3)
     {
@@ -173,10 +176,10 @@ void write_fifo(enum OPERATION mode,
     c_en &= (mode == FORWARD_NTT_MODE);
     d_en &= (mode == FORWARD_NTT_MODE);
 
-    fd = FIFO_PISO<DEPT_A, T>(fifo_a, a_en, data_in, 0);
-    fb = FIFO_PISO<DEPT_B, T>(fifo_b, b_en, data_in, 0);
-    fc = FIFO_PISO<DEPT_C, T>(fifo_c, c_en, data_in, 0);
-    fa = FIFO_PISO<DEPT_D, T>(fifo_d, d_en, data_in, 0);
+    fd = FIFO_PISO<DEPT_A, T>(fifo_a, a_en, data_in, new_value[0]);
+    fb = FIFO_PISO<DEPT_B, T>(fifo_b, b_en, data_in, new_value[1]);
+    fc = FIFO_PISO<DEPT_C, T>(fifo_c, c_en, data_in, new_value[2]);
+    fa = FIFO_PISO<DEPT_D, T>(fifo_d, d_en, data_in, new_value[3]);
 
     data_out[0] = fa;
     data_out[1] = fc;

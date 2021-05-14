@@ -1,5 +1,5 @@
 CC = /usr/bin/c++
-CFLAGS = -g3 -O0 -Wall -Wextra -Wpedantic #-Werror
+CFLAGS = -g3 -O0 -Wall -Wextra -Wpedantic -Werror
 RM = /bin/rm 
 
 HEADERS = address_encoder_decoder.h butterfly_unit.h consts.h fifo.h ntt.h ntt2x2.h params.h ram_util.h reduce.h util.h 

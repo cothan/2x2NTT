@@ -20,7 +20,6 @@ void ntt2x2_mul(bram *ram, const bram *mul_ram, enum MAPPING mapping)
 
     for (auto l = 0; l < DILITHIUM_N / 4; ++l)
     {
-#pragma HLS PIPELINE II=1
         ram_i = resolve_address(mapping, l);
 
         // Read address from RAM

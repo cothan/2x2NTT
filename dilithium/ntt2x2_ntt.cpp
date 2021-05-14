@@ -94,7 +94,8 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
     // Initialize coefficients
     int32_t data_in[4] = {0},
             data_fifo[4] = {0},
-            data_out[4] = {0};
+            data_out[4] = {0}, 
+            null[4] = {0};
 
     // Initialize writeback
     auto count = 0;
@@ -103,8 +104,8 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
     {
         for (auto i = 0; i < DILITHIUM_N / 4; ++i)
         {
-#pragma HLS LOOP_FLATTEN
-#pragma HLS PIPELINE II = 1
+// #pragma HLS LOOP_FLATTEN
+// #pragma HLS PIPELINE II = 1
             /* ============================================== */
 
             if (i == 0)
@@ -141,10 +142,12 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             auto fi = FIFO<DEPT_I>(fifo_i, ram_i);
 
             // Write data_out to FIFO A, B, C, D
-            FIFO_PISO<DEPT_A, int32_t>(fifo_a, false, data_fifo, data_out[0]);
-            FIFO_PISO<DEPT_B, int32_t>(fifo_b, false, data_fifo, data_out[1]);
-            FIFO_PISO<DEPT_C, int32_t>(fifo_c, false, data_fifo, data_out[2]);
-            FIFO_PISO<DEPT_D, int32_t>(fifo_d, false, data_fifo, data_out[3]);
+            // FIFO_PISO<DEPT_A, int32_t>(fifo_a, false, data_fifo, data_out[0]);
+            // FIFO_PISO<DEPT_B, int32_t>(fifo_b, false, data_fifo, data_out[1]);
+            // FIFO_PISO<DEPT_C, int32_t>(fifo_c, false, data_fifo, data_out[2]);
+            // FIFO_PISO<DEPT_D, int32_t>(fifo_d, false, data_fifo, data_out[3]);
+            // Replace by single write FIFO, null as output since we don't care about output
+            write_fifo<int32_t>(mode, null, data_fifo, data_out, fifo_a, fifo_b, fifo_c, fifo_d, count);
 
             /* ============================================== */
             // Conditional
@@ -192,7 +195,7 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
 
     for (auto i = 0; i < DEPT_I; i++)
     {
-#pragma HLS PIPELINE II = 1
+// #pragma HLS PIPELINE II = 1
 
         /* ============================================== */
         // Emptying FIFO
@@ -204,6 +207,9 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
         FIFO<DEPT_B>(fifo_b, 0);
         FIFO<DEPT_C>(fifo_c, 0);
         FIFO<DEPT_D>(fifo_d, 0);
+        // Equivalent to write_fifo
+        // Null as output since we don't care about output
+        // write_fifo<int32_t>(mode, null, null, null, fifo_a, fifo_b, fifo_c, fifo_d, count);
         count = (count + 1) & 3;
 
         // Extract data from FIFO
@@ -247,7 +253,8 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
     // Initialize coefficients
     int32_t data_in[4] = {0},
             data_out[4] = {0},
-            data_fifo[4] = {0};
+            data_fifo[4] = {0}, 
+            null[4] = {0};
 
     // Initialize writeback
     auto count = 0;
@@ -257,8 +264,8 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
     {
         for (auto i = 0; i < DILITHIUM_N / 4; ++i)
         {
-#pragma HLS LOOP_FLATTEN
-#pragma HLS PIPELINE II = 1
+// #pragma HLS LOOP_FLATTEN
+// #pragma HLS PIPELINE II = 1
             /* ============================================== */
 
             if (i == 0)
@@ -274,12 +281,13 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             auto ram_i = resolve_address(mapping, addr);
 
             // Read ram by address
-            read_ram(&data_fifo[0], &data_fifo[1],
-                     &data_fifo[2], &data_fifo[3],
+            read_ram(&data_in[0], &data_in[1],
+                     &data_in[2], &data_in[3],
                      ram, ram_i);
 
-            // Write data_fifo to FIFO
-            write_fifo<int32_t>(mode, data_in, data_fifo, fifo_a,
+            // Write data_in to FIFO, extract output to data_fifo
+            // In this mode, new_value[4] = null[4]
+            write_fifo<int32_t>(mode, data_fifo, data_in, null, fifo_a,
                                 fifo_b, fifo_c, fifo_d, count);
 
             // Prepare twiddle
@@ -305,7 +313,7 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             /* ============================================== */
 
             // Calculate
-            buttefly_circuit(data_out, data_in,
+            buttefly_circuit(data_out, data_fifo,
                              w[0], w[1], w[2], w[3], mode);
 
             /* ============================================== */
@@ -350,8 +358,8 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
 
     for (auto i = 0; i < DEPT_W; i++)
     {
-        // Write data_fifo to FIFO
-        write_fifo<int32_t>(mode, data_in, data_fifo, fifo_a,
+        // Extract left over data in FIFO to data_in
+        write_fifo<int32_t>(mode, data_in, null, null, fifo_a,
                             fifo_b, fifo_c, fifo_d, count);
 
         // Rolling FIFO
