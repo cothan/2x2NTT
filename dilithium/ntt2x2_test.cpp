@@ -83,7 +83,7 @@ int ntt2x2_MUL(int32_t r_mul[DILITHIUM_N], int32_t test_ram[DILITHIUM_N])
     return ret;
 }
 
-#define TESTS 100
+#define TESTS 1000
 
 int main()
 {

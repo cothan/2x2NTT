@@ -81,8 +81,7 @@ T FIFO_PISO(T fifo[DEPT], const bool piso_en, const T line[4], const T new_value
 }
 
 template <typename T>
-void read_fifo(T *fa, T *fb,
-               T *fc, T *fd,
+void read_fifo(T data_out[4],
                const int count,
                const T fifo_a[DEPT_A],
                const T fifo_b[DEPT_B],
@@ -121,10 +120,10 @@ void read_fifo(T *fa, T *fb,
         break;
     }
 
-    *fa = ta; //fout[0];
-    *fb = tb; //fout[1];
-    *fc = tc; //fout[2];
-    *fd = td; //fout[3];
+    data_out[0] = ta;
+    data_out[1] = tb;
+    data_out[2] = tc;
+    data_out[3] = td;
 }
 
 /* This module rolling FIFO base on operation mode: FWD_NTT or INV_NTT
@@ -181,10 +180,17 @@ void write_fifo(enum OPERATION mode,
     fc = FIFO_PISO<DEPT_C, T>(fifo_c, c_en, data_in, new_value[2]);
     fa = FIFO_PISO<DEPT_D, T>(fifo_d, d_en, data_in, new_value[3]);
 
-    data_out[0] = fa;
-    data_out[1] = fc;
-    data_out[2] = fb;
-    data_out[3] = fd;
+    if (mode == FORWARD_NTT_MODE)
+    {
+        data_out[0] = fa;
+        data_out[1] = fc;
+        data_out[2] = fb;
+        data_out[3] = fd;
+    }
+    else
+    {
+        read_fifo<T>(data_out, count, fifo_a, fifo_b, fifo_c, fifo_d);
+    }
 }
 
 #endif

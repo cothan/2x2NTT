@@ -78,7 +78,7 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
     int32_t fifo_b[DEPT_B] = {0};
     int32_t fifo_c[DEPT_C] = {0};
     int32_t fifo_d[DEPT_D] = {0};
-    int32_t fa, fb, fc, fd;
+    // int32_t fa, fb, fc, fd;
 
     // Initialize Forward NTT
     int32_t fw_ntt_pattern[4] = {4, 2, 0, 4};
@@ -146,25 +146,23 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             // FIFO_PISO<DEPT_B, int32_t>(fifo_b, false, data_fifo, data_out[1]);
             // FIFO_PISO<DEPT_C, int32_t>(fifo_c, false, data_fifo, data_out[2]);
             // FIFO_PISO<DEPT_D, int32_t>(fifo_d, false, data_fifo, data_out[3]);
+            
             // Replace by single write FIFO, null as output since we don't care about output
-            write_fifo<int32_t>(mode, null, data_fifo, data_out, fifo_a, fifo_b, fifo_c, fifo_d, count);
+            // Rolling FIFO and extract data
+            count = (count + 1) & 3;
+            write_fifo<int32_t>(mode, data_fifo, null, data_out, fifo_a, fifo_b, fifo_c, fifo_d, count);
 
             /* ============================================== */
             // Conditional
-            // count equal the size of FIFO_I
-            if (count == DEPT_I)
+            if (count == 0 && i != 0)
             {
                 write_en = true;
             }
-            count = (count + 1) & 3;
-
-            // Extract data from FIFO
-            read_fifo<int32_t>(&fa, &fb, &fc, &fd, count, fifo_a, fifo_b, fifo_c, fifo_d);
 
             // Write back
             if (write_en)
             {
-                write_ram(ram, fi, fa, fb, fc, fd);
+                write_ram(ram, fi, data_fifo[0], data_fifo[1], data_fifo[2], data_fifo[3]);
             }
 
             /* ============================================== */
@@ -203,21 +201,18 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
         auto fi = FIFO<DEPT_I>(fifo_i, 0);
 
         // Write data_out to FIFO A, B, C, D
-        FIFO<DEPT_A>(fifo_a, 0);
-        FIFO<DEPT_B>(fifo_b, 0);
-        FIFO<DEPT_C>(fifo_c, 0);
-        FIFO<DEPT_D>(fifo_d, 0);
-        // Equivalent to write_fifo
-        // Null as output since we don't care about output
-        // write_fifo<int32_t>(mode, null, null, null, fifo_a, fifo_b, fifo_c, fifo_d, count);
+        // FIFO<DEPT_A>(fifo_a, 0);
+        // FIFO<DEPT_B>(fifo_b, 0);
+        // FIFO<DEPT_C>(fifo_c, 0);
+        // FIFO<DEPT_D>(fifo_d, 0);
+
+        // Rolling the FIFO and extract data from FIFO
         count = (count + 1) & 3;
-
-        // Extract data from FIFO
-        read_fifo<int32_t>(&fa, &fb, &fc, &fd, count, fifo_a, fifo_b, fifo_c, fifo_d);
+        write_fifo<int32_t>(mode, data_fifo, null, null, fifo_a, fifo_b, fifo_c, fifo_d, count);
+        
         /* ============================================== */
-
         // Write back
-        write_ram(ram, fi, fa, fb, fc, fd);
+        write_ram(ram, fi, data_fifo[0], data_fifo[1], data_fifo[2], data_fifo[3]);
 
         // printf("--------------\n");
         // print_array(fifo_i, DEPT_I, "FIFO_I");
