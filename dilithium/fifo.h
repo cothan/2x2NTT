@@ -136,7 +136,7 @@ void read_fifo(T data_out[4],
  * data_out[4]: Output of this module
  */
 template <typename T>
-void write_fifo(enum OPERATION mode,
+void read_write_fifo(enum OPERATION mode,
                 T data_out[4], 
                 const T data_in[4], const T new_value[4],
                 T fifo_a[DEPT_A], T fifo_b[DEPT_B],
@@ -144,41 +144,41 @@ void write_fifo(enum OPERATION mode,
                 const int count)
 {
     T fa, fb, fc, fd;
-    bool a_en = false,
-         b_en = false,
-         c_en = false,
-         d_en = false;
+    bool a_piso_en = false,
+         b_piso_en = false,
+         c_piso_en = false,
+         d_piso_en = false;
 
     switch (count & 3)
     {
         // Use PISO to write
     case 0:
         // Write to FIFO_D
-        d_en = true;
+        d_piso_en = true;
         break;
     case 1:
         // Write to FIFO_B
-        b_en = true;
+        b_piso_en = true;
         break;
     case 2:
         // Write to FIFO_C
-        c_en = true;
+        c_piso_en = true;
         break;
 
     default:
         // Write to FIFO_A
-        a_en = true;
+        a_piso_en = true;
         break;
     }
-    a_en &= (mode == FORWARD_NTT_MODE);
-    b_en &= (mode == FORWARD_NTT_MODE);
-    c_en &= (mode == FORWARD_NTT_MODE);
-    d_en &= (mode == FORWARD_NTT_MODE);
+    a_piso_en &= (mode == FORWARD_NTT_MODE);
+    b_piso_en &= (mode == FORWARD_NTT_MODE);
+    c_piso_en &= (mode == FORWARD_NTT_MODE);
+    d_piso_en &= (mode == FORWARD_NTT_MODE);
 
-    fd = FIFO_PISO<DEPT_A, T>(fifo_a, a_en, data_in, new_value[0]);
-    fb = FIFO_PISO<DEPT_B, T>(fifo_b, b_en, data_in, new_value[1]);
-    fc = FIFO_PISO<DEPT_C, T>(fifo_c, c_en, data_in, new_value[2]);
-    fa = FIFO_PISO<DEPT_D, T>(fifo_d, d_en, data_in, new_value[3]);
+    fd = FIFO_PISO<DEPT_A, T>(fifo_a, a_piso_en, data_in, new_value[0]);
+    fb = FIFO_PISO<DEPT_B, T>(fifo_b, b_piso_en, data_in, new_value[1]);
+    fc = FIFO_PISO<DEPT_C, T>(fifo_c, c_piso_en, data_in, new_value[2]);
+    fa = FIFO_PISO<DEPT_D, T>(fifo_d, d_piso_en, data_in, new_value[3]);
 
     if (mode == FORWARD_NTT_MODE)
     {
