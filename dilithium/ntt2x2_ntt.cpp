@@ -70,10 +70,10 @@ void update_indexes(int tw_i[4],
  * Output: ram 
  */
 
-void ntt2x2_ntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
+void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
 {
     // Initialize FIFO
-    int32_t fifo_i[DEPT_I] = {0};
+    int32_t fifo_i[DEPT_W] = {0};
     int32_t fifo_a[DEPT_A] = {0};
     int32_t fifo_b[DEPT_B] = {0};
     int32_t fifo_c[DEPT_C] = {0};
@@ -93,6 +93,7 @@ void ntt2x2_ntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
 
     // Initialize coefficients
     int32_t data_in[4] = {0},
+            data_fifo[4] = {0},
             data_out[4] = {0};
 
     // Initialize writeback
@@ -132,29 +133,30 @@ void ntt2x2_ntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             /* ============================================== */
 
             // Calculate
-            buttefly_circuit_new(data_out, data_in,
-                                 w1, w2, w3, w4, mode);
+            buttefly_circuit(data_out, data_in,
+                             w1, w2, w3, w4, mode);
 
             /* ============================================== */
             // Rolling FIFO index
             auto fi = FIFO<DEPT_I>(fifo_i, ram_i);
 
             // Write data_out to FIFO A, B, C, D
-            FIFO<DEPT_A>(fifo_a, data_out[0]);
-            FIFO<DEPT_B>(fifo_b, data_out[1]);
-            FIFO<DEPT_C>(fifo_c, data_out[2]);
-            FIFO<DEPT_D>(fifo_d, data_out[3]);
+            FIFO_PISO<DEPT_A, int32_t>(fifo_a, false, data_fifo, data_out[0]);
+            FIFO_PISO<DEPT_B, int32_t>(fifo_b, false, data_fifo, data_out[1]);
+            FIFO_PISO<DEPT_C, int32_t>(fifo_c, false, data_fifo, data_out[2]);
+            FIFO_PISO<DEPT_D, int32_t>(fifo_d, false, data_fifo, data_out[3]);
 
             /* ============================================== */
-            // Conditional writeback
-            if (count == 3)
+            // Conditional
+            // count equal the size of FIFO_I
+            if (count == DEPT_I)
             {
                 write_en = true;
             }
             count = (count + 1) & 3;
 
             // Extract data from FIFO
-            read_fifo(&fa, &fb, &fc, &fd, count, fifo_a, fifo_b, fifo_c, fifo_d);
+            read_fifo<int32_t>(&fa, &fb, &fc, &fd, count, fifo_a, fifo_b, fifo_c, fifo_d);
 
             // Write back
             if (write_en)
@@ -188,7 +190,7 @@ void ntt2x2_ntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
         /* ============================================== */
     }
 
-    for (auto i = 0; i < 3; i++)
+    for (auto i = 0; i < DEPT_I; i++)
     {
 #pragma HLS PIPELINE II = 1
 
@@ -205,7 +207,7 @@ void ntt2x2_ntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
         count = (count + 1) & 3;
 
         // Extract data from FIFO
-        read_fifo(&fa, &fb, &fc, &fd, count, fifo_a, fifo_b, fifo_c, fifo_d);
+        read_fifo<int32_t>(&fa, &fb, &fc, &fd, count, fifo_a, fifo_b, fifo_c, fifo_d);
         /* ============================================== */
 
         // Write back
@@ -220,7 +222,7 @@ void ntt2x2_ntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
     }
 }
 
-void ntt2x2_ntt_forward(bram *ram, enum OPERATION mode, enum MAPPING mapping)
+void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
 {
     // Initialize FIFO
     int32_t fifo_i[DEPT_W] = {0};
@@ -277,8 +279,8 @@ void ntt2x2_ntt_forward(bram *ram, enum OPERATION mode, enum MAPPING mapping)
                      ram, ram_i);
 
             // Write data_fifo to FIFO
-            write_fifo(data_in, data_fifo, fifo_a,
-                       fifo_b, fifo_c, fifo_d, count);
+            write_fifo<int32_t>(mode, data_in, data_fifo, fifo_a,
+                                fifo_b, fifo_c, fifo_d, count);
 
             // Prepare twiddle
             resolve_twiddle(tw_i, &last, tw_base_i, k, l, mode);
@@ -299,15 +301,15 @@ void ntt2x2_ntt_forward(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             // print_array(fifo_d, DEPT_D, "FIFO_D");
             // print_array(data_in, 4, "data_in");
 
-            PIPO<DEPT_W>(w, fifo_w, w1, w2, w3, w4);
+            PIPO<DEPT_W, int32_t>(w, fifo_w, w1, w2, w3, w4);
             /* ============================================== */
 
             // Calculate
-            buttefly_circuit_new(data_out, data_in,
-                                 w[0], w[1], w[2], w[3], mode);
+            buttefly_circuit(data_out, data_in,
+                             w[0], w[1], w[2], w[3], mode);
 
             /* ============================================== */
-
+            // count equal the size of FIFO_I
             if (count == DEPT_W)
             {
                 write_en = true;
@@ -346,20 +348,20 @@ void ntt2x2_ntt_forward(bram *ram, enum OPERATION mode, enum MAPPING mapping)
         /* ============================================== */
     }
 
-    for (auto i = 0; i < 4; i++)
+    for (auto i = 0; i < DEPT_W; i++)
     {
         // Write data_fifo to FIFO
-        write_fifo(data_in, data_fifo, fifo_a,
-                   fifo_b, fifo_c, fifo_d, count);
+        write_fifo<int32_t>(mode, data_in, data_fifo, fifo_a,
+                            fifo_b, fifo_c, fifo_d, count);
 
         // Rolling FIFO
         auto fi = FIFO<DEPT_W>(fifo_i, 0);
 
         // Buffer twiddle
-        PIPO<DEPT_W>(w, fifo_w, 0, 1, 2, 3);
+        PIPO<DEPT_W>(w, fifo_w, 0, 0, 0, 0);
 
-        buttefly_circuit_new(data_out, data_in,
-                             w[0], w[1], w[2], w[3], mode);
+        buttefly_circuit(data_out, data_in,
+                         w[0], w[1], w[2], w[3], mode);
 
         // Write back
         write_ram(ram, fi, data_out[0], data_out[1],

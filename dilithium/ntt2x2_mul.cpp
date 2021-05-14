@@ -20,6 +20,7 @@ void ntt2x2_mul(bram *ram, const bram *mul_ram, enum MAPPING mapping)
 
     for (auto l = 0; l < DILITHIUM_N / 4; ++l)
     {
+#pragma HLS PIPELINE II=1
         ram_i = resolve_address(mapping, l);
 
         // Read address from RAM
@@ -31,7 +32,7 @@ void ntt2x2_mul(bram *ram, const bram *mul_ram, enum MAPPING mapping)
         read_ram(&w1, &w2, &w3, &w4, mul_ram, l);
 
         // Send to butterfly circuit
-        buttefly_circuit_new(data_out, data_in,
+        buttefly_circuit(data_out, data_in,
                              w2, w4, w1, w3, MUL_MODE);
 
         // Write back

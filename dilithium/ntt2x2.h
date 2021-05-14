@@ -11,10 +11,10 @@ typedef struct
     int32_t coeffs[DILITHIUM_N / 4][4];
 } bram;
 
-void ntt2x2_ntt(bram *ram, enum OPERATION mode, enum MAPPING mapping);
+void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping);
 
 void ntt2x2_mul(bram *ram, const bram *mul_ram, enum MAPPING mapping);
 
-void ntt2x2_ntt_forward(bram *ram, enum OPERATION mode, enum MAPPING mapping);
+void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping);
 
 #endif

@@ -20,7 +20,7 @@ int ntt2x2_NTT(int32_t r_gold[DILITHIUM_N])
     // Load data into BRAM, 4 coefficients per line
     reshape(&ram, r_gold);
     // Compute NTT
-    ntt2x2_ntt_forward(&ram, FORWARD_NTT_MODE, ENCODE_FALSE);
+    ntt2x2_fwdntt(&ram, FORWARD_NTT_MODE, ENCODE_FALSE);
 
     // Run the reference code
     ntt(r_gold);
@@ -43,7 +43,7 @@ int ntt2x2_INVNTT(int32_t r_gold[DILITHIUM_N])
     // Load data into BRAM, 4 coefficients per line
     reshape(&ram, r_gold);
     // Compute NTT
-    ntt2x2_ntt(&ram, INVERSE_NTT_MODE, DECODE_FALSE);
+    ntt2x2_invntt(&ram, INVERSE_NTT_MODE, DECODE_FALSE);
 
     // Run the reference code
     invntt_tomont(r_gold);
