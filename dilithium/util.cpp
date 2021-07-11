@@ -31,7 +31,7 @@ void print_index_reshaped_array(bram *ram, int index)
     int32_t a, b, c, d;
     read_ram(&a, &b, &c, &d, ram, index);
     printf("[%d]: [%d, %d, %d, %d]\n", index, a, b, c, d);
-    printf("--------------\n");
+    
 }
 
 // Store 4 coefficients per line
@@ -71,19 +71,21 @@ int compare_bram_array(bram *ram, int32_t array[DILITHIUM_N], const char *string
         d = (array[i + 3] + DILITHIUM_Q) % DILITHIUM_Q;
 
         addr = i / 4;
-        if (print_out) printf("%d: %d, %d %d, %d\n", addr, a, b, c, d);
+        if (print_out) printf("%d: %d, %d, %d, %d\n", addr, a, b, c, d);
         addr = resolve_address(mapping, addr);
         
-        if (print_out) print_index_reshaped_array(ram, addr);
         read_ram(&ta, &tb, &tc, &td, ram, addr);
 
-        ta = ta % DILITHIUM_Q;
-        tb = tb % DILITHIUM_Q;
-        tc = tc % DILITHIUM_Q;
-        td = td % DILITHIUM_Q;
-
+        ta = (ta + DILITHIUM_Q) % DILITHIUM_Q;
+        tb = (tb + DILITHIUM_Q) % DILITHIUM_Q;
+        tc = (tc + DILITHIUM_Q) % DILITHIUM_Q;
+        td = (td + DILITHIUM_Q) % DILITHIUM_Q;
+        if (print_out) printf("[%d]: |%d, %d, %d, %d|\n", i, ta, tb, tc, td);
+        // if (print_out) print_index_reshaped_array(ram, addr);
+        
         // Quick xor, I hate long if-else clause
-
+        if (print_out) printf("--------------\n");
+        
         if ( (ta != a) || (tb != b) || (tc != c) || (td != d) )
         {
             printf("%s Error at index: %d => %d\n", string, i, addr);

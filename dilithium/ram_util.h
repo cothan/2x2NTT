@@ -1,6 +1,7 @@
 #ifndef RAM_UTIL_H
 #define RAM_UTIL_H
 
+#include <stdio.h>
 #include "ntt2x2.h"
 #include "consts.h"
 

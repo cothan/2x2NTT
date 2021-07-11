@@ -25,8 +25,8 @@ void butterfly(enum OPERATION mode, T *bj, T *bjlen,
         a[j + len] = t - a[j + len];
         a[j + len] = montgomery_reduce((int64_t)zeta * a[j + len]); */
         // INV_NTT
-        aj2 = aj1 + ajlen1;
-        ajlen2 = aj1 - ajlen1;
+        aj2    = (aj1 + ajlen1 + DILITHIUM_Q) % DILITHIUM_Q;
+        ajlen2 = (aj1 - ajlen1 + DILITHIUM_Q) % DILITHIUM_Q;
     }
     else
     {
@@ -46,8 +46,8 @@ void butterfly(enum OPERATION mode, T *bj, T *bjlen,
         a[j + len] = a[j] - t;
         a[j] = a[j] + t; */
         // NTT
-        ajlen4 = aj3 - ajlen3;
-        aj4 = aj3 + ajlen3;
+        ajlen4 = (aj3 - ajlen3 + DILITHIUM_Q) % DILITHIUM_Q;
+        aj4    = (aj3 + ajlen3 + DILITHIUM_Q) % DILITHIUM_Q;
     }
     else
     {

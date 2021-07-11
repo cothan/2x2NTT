@@ -83,7 +83,37 @@ int ntt2x2_MUL(int32_t r_mul[DILITHIUM_N], int32_t test_ram[DILITHIUM_N])
     return ret;
 }
 
-#define TESTS 1000
+int polymul(int32_t a[DILITHIUM_N], int32_t b[DILITHIUM_N])
+{
+    bram ram_a_ntt, ram_b_ntt;
+    int ret = 0;
+    reshape(&ram_a_ntt, a);
+    reshape(&ram_b_ntt, b);
+
+    // Test Hardware Multiplication
+    ntt2x2_fwdntt(&ram_a_ntt, FORWARD_NTT_MODE, ENCODE_FALSE);
+    ntt2x2_fwdntt(&ram_b_ntt, FORWARD_NTT_MODE, ENCODE_FALSE);
+
+    ntt(a);
+    ntt(b);
+    ret |= compare_bram_array(&ram_a_ntt, a, "FORWARD_NTT_MODE A", ENCODE_TRUE, 0);
+    ret |= compare_bram_array(&ram_b_ntt, b, "FORWARD_NTT_MODE B", ENCODE_TRUE, 0);
+
+    ntt2x2_mul(&ram_a_ntt, &ram_b_ntt, ENCODE_FALSE);
+    pointwise_montgomery(a, a, b);
+    ret |= compare_bram_array(&ram_a_ntt, a, "MUL A*B", ENCODE_TRUE, 0);
+
+    ntt2x2_invntt(&ram_a_ntt, INVERSE_NTT_MODE, ENCODE_TRUE);
+    invntt_tomont(a);
+
+    ret |= compare_bram_array(&ram_a_ntt, a, "INVERSE_NTT_MODE(A*B)", DECODE_FALSE, 0);
+
+    // Test Software Multiplication
+    
+    return ret;
+}
+
+#define TESTS 100
 
 int main()
 {
@@ -92,9 +122,11 @@ int main()
     int32_t r_invntt[DILITHIUM_N], 
             r_mul[DILITHIUM_N], 
             test_ram[DILITHIUM_N], 
-            r_ntt[DILITHIUM_N];
-    int32_t t1, t2, t3, t4;
-    int ret = 1;
+            r_ntt[DILITHIUM_N], 
+            a[DILITHIUM_N], 
+            b[DILITHIUM_N];
+    int32_t t1, t2, t3, t4, t5;
+    int ret = 0;
 
     for (int k = 0; k < TESTS; k++)
     {
@@ -112,11 +144,16 @@ int main()
 
             t4 = rand() % DILITHIUM_Q; 
             r_ntt[i] = t4;
+
+            t5 = rand() % DILITHIUM_Q;
+            a[i] = t5 % DILITHIUM_Q; 
+            b[i] = t5*31 % DILITHIUM_Q;
         }
 
-        ret &= ntt2x2_MUL(r_mul, test_ram);
-        ret &= ntt2x2_INVNTT(r_invntt);
-        ret &= ntt2x2_NTT(r_ntt);
+        ret |= ntt2x2_MUL(r_mul, test_ram);
+        ret |= ntt2x2_INVNTT(r_invntt);
+        ret |= ntt2x2_NTT(r_ntt);
+        ret |= polymul(a, b);
 
         if (ret)
         {
