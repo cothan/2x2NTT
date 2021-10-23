@@ -62,17 +62,25 @@ int addr_encoder(int addr_in)
     return fwdntt_map[addr_in];
 }
 
+/* 
+ * Figure out how to compute address decoder/encoder on fly. 
+ * However, for N=256, it's better to use table-based approach since it's fit in 1 LUT. 
+ * The on ly computation should take more than LUT. 
+ * Modulo can be replace by AND operation, divide can be replace by right shift as well. 
+ */
 int resolve_address(enum MAPPING mapping, int addr)
 {
     int ram_i;
     switch (mapping)
     {
     case DECODE_TRUE:
-        ram_i = addr_decoder(addr);
+        // ram_i = addr_decoder(addr);
+        ram_i = (addr % 16)*4 + addr/16;
         break;
 
     case ENCODE_TRUE:
-        ram_i = addr_encoder(addr);
+        // ram_i = addr_encoder(addr);
+        ram_i = (addr % 4)*16 + addr/4;
         break;
 
     default:
