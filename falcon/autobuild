@@ -1,0 +1,3 @@
+#!/bin/bash
+
+make ntt2x2_test; ./ntt2x2_test
