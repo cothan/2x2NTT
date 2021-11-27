@@ -89,17 +89,26 @@ void invntt(uint16_t a[FALCON_N])
             {
                 t = a[j];
                 a[j] = (t + a[j + len]) % FALCON_Q;
-                w = mq_sub_test(t, a[j + len]);
+                // w = mq_sub_test(t, a[j + len]);
+                w = (t + FALCON_Q - a[j + len]) % FALCON_Q;
                 a[j + len] = barret_mul(zeta, w);
             }
         }
+        // if (len == 2)
+        // {
+        //     for (int i = 0; i < 16; i++)
+        //     {
+        //         printf("%u, ", a[i]);
+        //     }
+        //     printf("\n");
+        // }
     }
 
     // f is multiple of 2, so shift and reduction
-    for (j = 0; j < FALCON_N; ++j)
-    {
-        a[j] = barret_mul(f, a[j]);
-    }
+    // for (j = 0; j < FALCON_N; ++j)
+    // {
+    //     a[j] = barret_mul(f, a[j]);
+    // }
 }
 
 /*************************************************
