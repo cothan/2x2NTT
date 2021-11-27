@@ -55,7 +55,7 @@ void butterfly(enum OPERATION mode, T *bj, T *bjlen,
         aj4 = aj3;
     }
 
-    if (mode == INVERSE_NTT_MODE)
+    /* if (mode == INVERSE_NTT_MODE)
     {
         if (aj4 & 1)
         {
@@ -79,10 +79,15 @@ void butterfly(enum OPERATION mode, T *bj, T *bjlen,
     {
         aj5 = aj4;
         ajlen5 = ajlen4;
-    }
+    } */
 
-    *bj = (aj5 < 0) ? aj5 + FALCON_Q : aj5;
-    *bjlen = (ajlen5 < 0) ? ajlen5 + FALCON_Q : ajlen5;
+    aj5 = aj4;
+    ajlen5 = ajlen4;
+
+    // *bj = (aj5 < 0) ? aj5 + FALCON_Q : aj5;
+    // *bjlen = (ajlen5 < 0) ? ajlen5 + FALCON_Q : ajlen5;
+    *bj = aj5;
+    *bjlen = ajlen5;
 }
 
 template <typename T>
