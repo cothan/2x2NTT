@@ -5,9 +5,9 @@
 #include "../params.h"
 
 
-void ntt2x2_ref(uint16_t a[FALCON_N]);
+void ntt2x2_ref(data_t a[FALCON_N]);
 
-void invntt2x2_ref(uint16_t a[FALCON_N]);
+void invntt2x2_ref(data_t a[FALCON_N]);
 
 
 #endif

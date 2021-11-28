@@ -1,8 +1,9 @@
 #ifndef PARAMS_H
 #define PARAMS_H
 
-enum OPERATION {FORWARD_NTT_MODE, INVERSE_NTT_MODE, MUL_MODE};
-enum MAPPING {DECODE_TRUE, DECODE_FALSE, ENCODE_TRUE, ENCODE_FALSE};
+// Define size of falcon
+typedef uint16_t data_t;
+typedef uint32_t data2_t;
 
 #define FALCON_Q 12289 // 2**13 + 2**12 + 1
 #define FALCON_Q0I 12287

@@ -5,7 +5,7 @@
 
 #define TESTS 100000
 
-int compare_array(uint16_t *a_gold, uint16_t *a)
+int compare_array(data_t *a_gold, data_t *a)
 {
     for (int i = 0; i < FALCON_N; i++)
     {
@@ -20,8 +20,8 @@ int compare_array(uint16_t *a_gold, uint16_t *a)
 
 int main()
 {
-    uint16_t a[FALCON_N] = {0}, a_gold[FALCON_N] = {0};
-    uint16_t tmp;
+    data_t a[FALCON_N] = {0}, a_gold[FALCON_N] = {0};
+    data_t tmp;
     srand(0);
 
     printf("Test Forward NTT = %u :", TESTS);

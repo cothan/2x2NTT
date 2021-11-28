@@ -7,17 +7,17 @@
 // ================ FORWARD NTT 2x2 ========================
 
 #define ctbf(a, b, z, t)               \
-    t = ((uint32_t)b * z) % FALCON_Q;  \
+    t = ((data2_t)b * z) % FALCON_Q;  \
     b = (a + FALCON_Q - t) % FALCON_Q; \
     a = (a + t) % FALCON_Q;
 
-void ntt2x2_ref(uint16_t a[FALCON_N])
+void ntt2x2_ref(data_t a[FALCON_N])
 {
-    uint16_t len;
-    uint16_t zeta1, zeta2[2];
-    uint16_t a1, b1, a2, b2;
-    uint16_t t1, t2;
-    uint16_t k1, k2[2];
+    data_t len;
+    data_t zeta1, zeta2[2];
+    data_t a1, b1, a2, b2;
+    data_t t1, t2;
+    data_t k1, k2[2];
 
     for (int l = FALCON_LOGN; l > 0; l -= 2)
     {
@@ -75,7 +75,7 @@ void ntt2x2_ref(uint16_t a[FALCON_N])
 #define gsbf(a, b, z, t)               \
     t = (a + FALCON_Q - b) % FALCON_Q; \
     a = (a + b) % FALCON_Q;            \
-    b = ((uint32_t)t * z) % FALCON_Q;
+    b = ((data2_t)t * z) % FALCON_Q;
 
 #define div2(t) ((t & 1) ? ((t >> 1) + (FALCON_Q + 1) / 2) : (t >> 1))
 
@@ -84,15 +84,15 @@ void ntt2x2_ref(uint16_t a[FALCON_N])
     t = div2(t);                       \
     a = (a + b) % FALCON_Q;            \
     a = div2(a);                       \
-    b = ((uint32_t)t * z) % FALCON_Q;
+    b = ((data2_t)t * z) % FALCON_Q;
 
-void invntt2x2_ref(uint16_t a[FALCON_N])
+void invntt2x2_ref(data_t a[FALCON_N])
 {
-    uint16_t len;
-    uint16_t a1, b1, a2, b2;
-    uint16_t t1, t2;
-    uint16_t k1[2], k2;
-    uint16_t zeta1[2], zeta2;
+    data_t len;
+    data_t a1, b1, a2, b2;
+    data_t t1, t2;
+    data_t k1[2], k2;
+    data_t zeta1[2], zeta2;
 
     for (int l = 0; l < FALCON_LOGN - (FALCON_LOGN & 1); l += 2)
     {

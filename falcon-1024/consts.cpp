@@ -3,7 +3,7 @@
 #include "consts.h"
 
 #if FALCON_N == 256
-extern const uint16_t zetas_barrett[] = {
+extern const data_t zetas_barrett[] = {
         1, 10984,  3542, 10643,  7468, 11726,  5728,  8961, 
     2319,  9088,  4846,  4805,  3091,  9326, 11112, 12149, 
     1260,  2426,  2013,  2881,  8595,  3382,  3637,  9558, 
@@ -39,7 +39,7 @@ extern const uint16_t zetas_barrett[] = {
 };
 
 
-const uint16_t MUL_test_RAM[FALCON_N] = {
+const data_t MUL_test_RAM[FALCON_N] = {
     1, 2, 3, 4, 5, 6, 7, 8,
     9, 10, 11, 12, 13, 14, 15, 16,
     17, 18, 19, 20, 21, 22, 23, 24,
@@ -75,7 +75,7 @@ const uint16_t MUL_test_RAM[FALCON_N] = {
 };
 
 #elif FALCON_N == 512
-extern const uint16_t zetas_barrett[] = {
+extern const data_t zetas_barrett[] = {
         1,  7143, 10984,  5736,  3542,  9744, 10643,  3195, 
     7468,  9664, 11726,  9283,  5728,  5023,  8961,  7311, 
     2319, 11334,  9088,  5086,  4846,  9154,  4805, 11227, 
@@ -143,7 +143,7 @@ extern const uint16_t zetas_barrett[] = {
 };
 
 
-const uint16_t MUL_test_RAM[FALCON_N] = {
+const data_t MUL_test_RAM[FALCON_N] = {
     1, 2, 3, 4, 5, 6, 7, 8,
     9, 10, 11, 12, 13, 14, 15, 16,
     17, 18, 19, 20, 21, 22, 23, 24,
@@ -211,7 +211,7 @@ const uint16_t MUL_test_RAM[FALCON_N] = {
 };
 
 #elif FALCON_N == 1024
-extern const uint16_t zetas_barrett[] = {
+extern const data_t zetas_barrett[] = {
         1, 10810,  7143,  4043, 10984,   722,  5736,  8155, 
     3542,  8785,  9744,  3621, 10643,  1212,  3195,  5860, 
     7468,  2639,  9664, 11340, 11726,  9314,  9283,  9545, 
@@ -342,7 +342,7 @@ extern const uint16_t zetas_barrett[] = {
     10347,  8881,  2575,  1165,  2776, 11111,  6811,  3511, 
 };
 
-const uint16_t MUL_test_RAM[FALCON_N] = {
+const data_t MUL_test_RAM[FALCON_N] = {
     1, 2, 3, 4, 5, 6, 7, 8,
     9, 10, 11, 12, 13, 14, 15, 16,
     17, 18, 19, 20, 21, 22, 23, 24,
