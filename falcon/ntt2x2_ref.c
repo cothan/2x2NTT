@@ -7,9 +7,10 @@
 #define ctbf(a, b, z, t)             \
   t = ((uint32_t)b * z) % FALCON_Q;  \
   b = (a + FALCON_Q - t) % FALCON_Q; \
-  a = (a + FALCON_Q + t) % FALCON_Q;
+  a = (a + t) % FALCON_Q;
 
-// Falcon_N = 1024
+// Falcon_N = 1024, 256
+// Falcon_N = 512
 void ntt2x2_ref(uint16_t a[FALCON_N])
 {
   uint16_t zeta1, zeta2[2];
@@ -18,12 +19,12 @@ void ntt2x2_ref(uint16_t a[FALCON_N])
   uint16_t k1, k2[2];
   for (int l = FALCON_LOGN; l > 0; l -= 2)
   {
-    int len = 1 << (l - 2);
+    uint16_t len = 1 << (l - 2);
     for (unsigned i = 0; i < FALCON_N; i += 1 << l)
     {
-      k1 = (FALCON_N + i) >> (l - 0);
+      k1 = (FALCON_N + i) >> l;
       k2[0] = (FALCON_N + i) >> (l - 1);
-      k2[1] = ((FALCON_N + i) >> (l - 1)) + 1;
+      k2[1] = k2[0]+ 1;
       zeta1 = zetas_barrett[k1];
       zeta2[0] = zetas_barrett[k2[0]];
       zeta2[1] = zetas_barrett[k2[1]];
@@ -82,7 +83,7 @@ void ntt(uint16_t a[FALCON_N])
 
         t = ((uint32_t)zeta * a[j + len]) % FALCON_Q;
         a[j + len] = (a[j] + FALCON_Q - t) % FALCON_Q;
-        a[j] = (a[j] + FALCON_Q + t) % FALCON_Q;
+        a[j] = (a[j] + t) % FALCON_Q;
 
         m = a[j];
         n = a[j + len];
@@ -126,3 +127,6 @@ int main()
   }
   return 0;
 }
+
+// Compile flags
+// gcc -o ntt2x2_ref consts.cpp ntt2x2_ref.c; ./ntt2x2_ref
