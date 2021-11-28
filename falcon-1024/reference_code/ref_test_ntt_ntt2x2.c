@@ -70,5 +70,8 @@ int main()
     return 0;
 }
 
-// Compile flags
-// gcc -o ntt2x2_ref consts.cpp ntt2x2_ref.c; ./ntt2x2_ref
+/*
+ * Compile flags
+ * gcc -o ref_test_ntt_ntt2x2 ref_ntt.c ref_ntt2x2.c ../consts.cpp  ref_test_ntt_ntt2x2.c -Wall
+ * ./ref_test_ntt_ntt2x2
+*/
