@@ -9,10 +9,28 @@
   a = (a + FALCON_Q + b) % FALCON_Q; \
   b = ((uint32_t)t * z) % FALCON_Q;
 
+#define op21(t) ((t & 1) ? ((t >> 1) + (FALCON_Q + 1) / 2) : (t >> 1))
+
+#define gsbf_div2(a, b, z, t)        \
+  t = (a + FALCON_Q - b) % FALCON_Q; \
+  t = op21(t);                       \
+  a = (a + FALCON_Q + b) % FALCON_Q; \
+  a = op21(a);                       \
+  b = ((uint32_t)t * z) % FALCON_Q;
+
 #define DEBUG 0
 
 void invntt2x2_ref(uint16_t a[FALCON_N])
 {
+#if FALCON_N == 256
+  const uint32_t f = 256;
+#elif FALCON_N == 512
+  const uint32_t f = 128;
+#elif FALCON_N == 1024
+  const uint32_t f = 64;
+#else
+#error "See config.h, FALCON_N is not supported"
+#endif
   uint16_t len, last;
   uint16_t a1, b1, a2, b2;
   uint16_t t1, t2;
@@ -65,6 +83,11 @@ void invntt2x2_ref(uint16_t a[FALCON_N])
       }
     }
   }
+
+  for (unsigned i = 0; i < FALCON_N; i++)
+  {
+    a[i] = ((uint32_t) f * a[i]) % FALCON_Q;
+  }
 }
 
 void invntt(uint16_t a[FALCON_N])
@@ -74,11 +97,11 @@ void invntt(uint16_t a[FALCON_N])
   uint16_t m, n;
 
 #if FALCON_N == 256
-  const uint16_t f = 256;
+  const uint32_t f = 256;
 #elif FALCON_N == 512
-  const uint16_t f = 128;
+  const uint32_t f = 128;
 #elif FALCON_N == 1024
-  const uint16_t f = 64;
+  const uint32_t f = 64;
 #else
 #error "See config.h, FALCON_N is not supported"
 #endif
@@ -104,11 +127,15 @@ void invntt(uint16_t a[FALCON_N])
     }
   }
 
-  // f is multiple of 2, so shift and reduction
-  // for (j = 0; j < FALCON_N; ++j)
-  // {
-  //     a[j] = barret_mul(f, a[j]);
-  // }
+  for (j = 0; j < FALCON_N; ++j)
+  {
+    // This work, 1024^-1 mod Q = 12277
+    // a[j] = ( (uint32_t) 12277 * a[j]) % FALCON_Q;
+    
+    // This doesn't work, no idea why they pick f like this
+    // f is multiple of 2, so shift and reduction
+    a[j] = ( (uint32_t) f * a[j]) % FALCON_Q;
+  }
 }
 
 #define TESTS 1000000
@@ -136,7 +163,7 @@ int main()
     {
       if (a_gold[i] != a[i])
       {
-        printf("%d: %u != %u", i, a_gold[i], a[i]);
+        printf("%d: %u != %u\n", i, a_gold[i], a[i]);
         return 1;
       }
     }
