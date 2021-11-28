@@ -4,33 +4,25 @@
 #include "params.h"
 #include "consts.h"
 
+#define DEBUG 0
+
 #define gsbf(a, b, z, t)             \
   t = (a + FALCON_Q - b) % FALCON_Q; \
-  a = (a + FALCON_Q + b) % FALCON_Q; \
+  a = (a + b) % FALCON_Q;            \
   b = ((uint32_t)t * z) % FALCON_Q;
 
-#define op21(t) ((t & 1) ? ((t >> 1) + (FALCON_Q + 1) / 2) : (t >> 1))
+#define div2(t) ((t & 1) ? ((t >> 1) + (FALCON_Q + 1) / 2) : (t >> 1))
 
 #define gsbf_div2(a, b, z, t)        \
   t = (a + FALCON_Q - b) % FALCON_Q; \
-  t = op21(t);                       \
-  a = (a + FALCON_Q + b) % FALCON_Q; \
-  a = op21(a);                       \
+  t = div2(t);                       \
+  a = (a + b) % FALCON_Q;            \
+  a = div2(a);                       \
   b = ((uint32_t)t * z) % FALCON_Q;
 
-#define DEBUG 0
 
 void invntt2x2_ref(uint16_t a[FALCON_N])
 {
-#if FALCON_N == 256
-  const uint32_t f = 256;
-#elif FALCON_N == 512
-  const uint32_t f = 128;
-#elif FALCON_N == 1024
-  const uint32_t f = 64;
-#else
-#error "See config.h, FALCON_N is not supported"
-#endif
   uint16_t len, last;
   uint16_t a1, b1, a2, b2;
   uint16_t t1, t2;
@@ -48,6 +40,7 @@ void invntt2x2_ref(uint16_t a[FALCON_N])
       zeta1[0] = FALCON_Q - zetas_barrett[k1[0]];
       zeta1[1] = FALCON_Q - zetas_barrett[k1[1]];
       zeta2 = FALCON_Q - zetas_barrett[k2];
+
       // printf("[======]%d\n", i);
       for (unsigned j = i; j < i + len; j++)
       {
@@ -58,8 +51,8 @@ void invntt2x2_ref(uint16_t a[FALCON_N])
 
         // Left
         // a1 - b1, a2 - b2
-        gsbf(a1, b1, zeta1[0], t1);
-        gsbf(a2, b2, zeta1[1], t2);
+        gsbf_div2(a1, b1, zeta1[0], t1);
+        gsbf_div2(a2, b2, zeta1[1], t2);
 #if DEBUG == 1
         printf("[%d]: %u, %u = %u, %u | %u\n", len, j, j + len,
                a1, b1, k1[0]);
@@ -68,8 +61,8 @@ void invntt2x2_ref(uint16_t a[FALCON_N])
 #endif
         // Right
         // a1 - a2, b1 - b2
-        gsbf(a1, a2, zeta2, t1);
-        gsbf(b1, b2, zeta2, t2);
+        gsbf_div2(a1, a2, zeta2, t1);
+        gsbf_div2(b1, b2, zeta2, t2);
 #if DEBUG == 1
         printf("[%d]: %u, %u = %u, %u | %u\n", 2 * len, j, j + 2 * len,
                a1, a2, k2);
@@ -83,11 +76,6 @@ void invntt2x2_ref(uint16_t a[FALCON_N])
       }
     }
   }
-
-  for (unsigned i = 0; i < FALCON_N; i++)
-  {
-    a[i] = ((uint32_t) f * a[i]) % FALCON_Q;
-  }
 }
 
 void invntt(uint16_t a[FALCON_N])
@@ -97,11 +85,11 @@ void invntt(uint16_t a[FALCON_N])
   uint16_t m, n;
 
 #if FALCON_N == 256
-  const uint32_t f = 256;
+  const uint32_t f = 12241; // pow(256, -1, 12289)
 #elif FALCON_N == 512
-  const uint32_t f = 128;
+  const uint32_t f = 12265; // pow(512, -1, 12289)
 #elif FALCON_N == 1024
-  const uint32_t f = 64;
+  const uint32_t f = 12277; // pow(1024, -1, 12289)
 #else
 #error "See config.h, FALCON_N is not supported"
 #endif
@@ -130,11 +118,11 @@ void invntt(uint16_t a[FALCON_N])
   for (j = 0; j < FALCON_N; ++j)
   {
     // This work, 1024^-1 mod Q = 12277
-    // a[j] = ( (uint32_t) 12277 * a[j]) % FALCON_Q;
-    
+    a[j] = ((uint32_t)f * a[j]) % FALCON_Q;
+
     // This doesn't work, no idea why they pick f like this
     // f is multiple of 2, so shift and reduction
-    a[j] = ( (uint32_t) f * a[j]) % FALCON_Q;
+    // a[j] = ((uint32_t)f * a[j]) % FALCON_Q;
   }
 }
 
@@ -170,3 +158,5 @@ int main()
   }
   return 0;
 }
+// Compile flags:
+// gcc -o invntt2x2_ref consts.cpp invntt2x2_ref.c -O3; ./invntt2x2_ref
