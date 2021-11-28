@@ -2,7 +2,7 @@ CC = /usr/bin/cc
 CFLAGS = -O3 -Wall
 RM = /bin/rm 
 
-HEADERS = ref_ntt.h ref_ntt2x2.h ../params.h
+HEADERS = ref_ntt.h ref_ntt2x2.h ../consts.h ../params.h
 SOURCES = ref_ntt.c ref_ntt2x2.c ../consts.cpp
 
 .PHONY: all clean 
