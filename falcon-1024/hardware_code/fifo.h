@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <cstdio>
-#include "params.h"
+#include "config.h"
 
 // Don't change this
 #define DEPT_I 3

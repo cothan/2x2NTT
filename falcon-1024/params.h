@@ -1,6 +1,8 @@
 #ifndef PARAMS_H
 #define PARAMS_H
 
+#include <stdint.h>
+
 // Define size of falcon
 typedef uint16_t data_t;
 typedef uint32_t data2_t;

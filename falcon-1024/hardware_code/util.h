@@ -2,9 +2,19 @@
 #define UTIL_H
 
 #include <stdint.h>
-#include "../params.h"
+#include <stdio.h>
+#include "config.h"
 
-void print_array(data_t *a, int bound, const char *string);
+template <typename T>
+void print_array(T *a, int bound, const char *string)
+{
+    printf("%s :", string);
+    for (int i = 0; i < bound; i++)
+    {
+        printf("%3u, ", a[i]);
+    }
+    printf("\n");
+}
 
 void print_reshaped_array(bram *ram, int bound, const char *string);
 

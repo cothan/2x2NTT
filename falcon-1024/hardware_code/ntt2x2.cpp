@@ -1,15 +1,4 @@
-#include "../params.h"
-#include "ntt.h"
-#include "ntt2x2.h"
-#include "util.h"
-#include "fifo.h"
-#include "consts.h"
-#include "address_encoder_decoder.h"
-#include "ram_util.h"
-#include "butterfly_unit.h"
-#include <cstdio>
-#include <cstring>
-
+#include "config.h"
 
 template <typename T>
 const T MAX(const T a, const T b)

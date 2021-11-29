@@ -2,7 +2,7 @@
 #define NTT2x2_H
 
 #include <stdint.h>
-#include "../params.h"
+#include "config.h"
 
 
 void update_indexes(unsigned tw_i[4],

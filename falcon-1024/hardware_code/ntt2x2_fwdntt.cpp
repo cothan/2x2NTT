@@ -14,7 +14,7 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
     data_t fifo_b[DEPT_B] = {0};
     data_t fifo_c[DEPT_C] = {0};
     data_t fifo_d[DEPT_D] = {0};
-    data_t fifo_w[DEPT_W][DEPT_W] = {0};
+    data_t fifo_w[DEPT_W][DEPT_W] = {{0}};
 
     // Initialize Forward NTT
     unsigned fw_ntt_pattern[] = {6, 4, 2, 0, 4};
@@ -76,13 +76,13 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             unsigned fi = FIFO<DEPT_W>(fifo_i, ram_i);
 
             printf("--------------%d - %d <= %d\n", count, ram_i, addr);
-            print_array(tw_i, 4, "twiddle");
-            print_array(fifo_i, DEPT_W, "FIFO_I");
-            print_array(fifo_a, DEPT_A, "FIFO_A");
-            print_array(fifo_b, DEPT_B, "FIFO_B");
-            print_array(fifo_c, DEPT_C, "FIFO_C");
-            print_array(fifo_d, DEPT_D, "FIFO_D");
-            print_array(data_in, 4, "data_in");
+            print_array<unsigned>(tw_i, 4, "twiddle");
+            print_array<data_t>(fifo_i, DEPT_W, "FIFO_I");
+            print_array<data_t>(fifo_a, DEPT_A, "FIFO_A");
+            print_array<data_t>(fifo_b, DEPT_B, "FIFO_B");
+            print_array<data_t>(fifo_c, DEPT_C, "FIFO_C");
+            print_array<data_t>(fifo_d, DEPT_D, "FIFO_D");
+            print_array<data_t>(data_in, 4, "data_in");
             
             /* 
              * PIPO for twiddle factor, delay it by DEPT_W

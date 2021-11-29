@@ -1,6 +1,6 @@
-#include "config.h"
 #include <stdio.h>
 #include <stdint.h>
+#include "config.h"
 
 /* 
  * Figure out how to compute address decoder/encoder on fly. 

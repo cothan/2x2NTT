@@ -1,18 +1,7 @@
 #include <stdio.h>
-#include "../params.h"
-#include "util.h"
+#include "config.h"
 #include "ram_util.h"
 #include "address_encoder_decoder.h"
-
-void print_array(data_t *a, int bound, const char *string)
-{
-    printf("%s :", string);
-    for (int i = 0; i < bound; i++)
-    {
-        printf("%3u, ", a[i]);
-    }
-    printf("\n");
-}
 
 void print_reshaped_array(bram *ram, int bound, const char *string)
 {
