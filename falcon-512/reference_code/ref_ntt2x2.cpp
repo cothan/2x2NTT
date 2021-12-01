@@ -78,7 +78,7 @@ void ntt2x2_ref(data_t a[FALCON_N])
             }
         }
     }
-
+    // This is similar to the 1st loop, just the 2 outter loops for `l` are difference
     // Left over layer will bypass half right
     for (l = FALCON_LOGN & 1; l > 0; l--)
     {
@@ -163,7 +163,44 @@ void invntt2x2_ref(data_t a[FALCON_N])
     data_t k1[2], k2;
     data_t zeta1[2], zeta2;
 
-    for (int l = 0; l < FALCON_LOGN - (FALCON_LOGN & 1); l += 2)
+    for (int l = 0; l < (FALCON_LOGN & 1); l++)
+    {
+        len = 1 << l; 
+        for (unsigned i = 0; i < FALCON_N; i += 1 << (l + 2))
+        {
+            k1[0] = ((FALCON_N - i / 2) >> l) - 1;
+            k1[1] = k1[0] - 1;
+            k2 = ((FALCON_N - i / 2) >> (l + 1)) - 1;
+            zeta1[0] = FALCON_Q - zetas_barrett[k1[0]];
+            zeta1[1] = FALCON_Q - zetas_barrett[k1[1]];
+            zeta2 = FALCON_Q - zetas_barrett[k2];
+
+            for (unsigned j = i; j < i + len; j++)
+            {
+                a1 = a[j];
+                a2 = a[j + len];
+                b1 = a[j + 2 * len];
+                b2 = a[j + 3 * len];
+
+                // Left
+                // a1 - a2, b1 - b2
+                gsbf_div2(a1, a2, zeta1[0], t1);
+                gsbf_div2(b1, b2, zeta1[1], t2);
+
+                // // Right
+                // // a1 - b1, a2 - b2
+                // gsbf_div2(a1, b1, zeta2, t1);
+                // gsbf_div2(a2, b2, zeta2, t2);
+
+                a[j] = a1;
+                a[j + len] = a2;
+                a[j + 2 * len] = b1;
+                a[j + 3 * len] = b2;
+            }
+        }
+    }
+
+    for (int l = (FALCON_LOGN & 1); l < FALCON_LOGN; l += 2)
     {
         len = 1 << l;
         for (unsigned i = 0; i < FALCON_N; i += 1 << (l + 2))
@@ -197,7 +234,7 @@ void invntt2x2_ref(data_t a[FALCON_N])
                 // a1 - b1, a2 - b2
                 gsbf_div2(a1, b1, zeta2, t1);
                 gsbf_div2(a2, b2, zeta2, t2);
-#if DEBUG == 4
+#if DEBUG == 3
                 printf("[%d]: %u, %u = %u, %u | %u\n", 2 * len, j, j + 2 * len,
                        a1, b1, k2);
                 printf("[%d]: %u, %u = %u, %u | %u\n", 2 * len, j + len, j + 3 * len,

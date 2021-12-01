@@ -2,6 +2,8 @@
 #include "ref_ntt.h"
 #include "../consts.h"
 
+#define DEBUG 0
+
 void ntt(data_t a[FALCON_N])
 {
     unsigned int len, start, j, k;
@@ -23,7 +25,7 @@ void ntt(data_t a[FALCON_N])
 
                 m = a[j];
                 n = a[j + len];
-#if DEBUG == 5
+#if DEBUG == 4
                 printf("%d: %u, %u = %u, %u | %u\n", len, j, j + len, m, n, k);
 #endif
             }
