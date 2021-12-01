@@ -10,8 +10,8 @@ typedef uint32_t data2_t;
 #define FALCON_Q 12289 // 2**13 + 2**12 + 1
 #define FALCON_Q0I 12287
 
-// This directory support FALCON_MODE == [0, 5]
-#define FALCON_MODE 5
+// This directory support FALCON_MODE == [1]
+#define FALCON_MODE 1
 
 
 #if FALCON_MODE == 0
