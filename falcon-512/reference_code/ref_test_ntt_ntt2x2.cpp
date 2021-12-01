@@ -20,6 +20,7 @@ int compare_array(data_t *a_gold, data_t *a)
 
 int main()
 {
+    printf("Test for FALCON_N = %u\n", FALCON_N);
     data_t a[FALCON_N] = {0}, a_gold[FALCON_N] = {0};
     data_t tmp;
     srand(0);

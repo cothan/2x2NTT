@@ -17,6 +17,15 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
     data_t fifo_w[DEPT_W][DEPT_W] = {{0}};
 
     // Initialize Forward NTT
+#if FALCON_MODE == 5
+    unsigned fw_ntt_pattern[] = {6, 4, 2, 0, 6};
+#elif FALCON_MODE == 1
+    unsigned fw_ntt_pattern[] = {5, 3, 1, 0, 5};
+#elif FALCON_MODE == 0
+    unsigned fw_ntt_pattern[] = {4, 2, 0, 4};
+#else
+#error "FALCON_MODE supports [0,1,5]"
+#endif 
     unsigned fw_ntt_pattern[] = {6, 4, 2, 0, 6};
     unsigned s, last = 0;
 

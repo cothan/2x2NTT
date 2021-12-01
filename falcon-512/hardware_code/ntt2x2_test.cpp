@@ -117,8 +117,8 @@ int polymul(data_t a[FALCON_N], data_t b[FALCON_N])
 
 int main()
 {
-    // srand(time(0));
-    srand(0);
+    printf("Test for FALCON_N = %u\n", FALCON_N);
+    srand(time(0));
     data_t r_invntt[FALCON_N],
         r_mul[FALCON_N],
         test_ram[FALCON_N],
