@@ -7,21 +7,24 @@
 // ================ FORWARD NTT 2x2 ========================
 
 #define ctbf(a, b, z, t)               \
-    t = ((data2_t)b * z) % FALCON_Q;  \
+    t = ((data2_t)b * z) % FALCON_Q;   \
     b = (a + FALCON_Q - t) % FALCON_Q; \
     a = (a + t) % FALCON_Q;
 
 void ntt2x2_ref(data_t a[FALCON_N])
 {
-    data_t len;
+    data_t len, leftover, tmp;
     data_t zeta1, zeta2[2];
     data_t a1, b1, a2, b2;
     data_t t1, t2;
     data_t k1, k2[2];
+    int l;
 
-    for (int l = FALCON_LOGN; l > 0; l -= 2)
+    // The two loops are similar actually.
+    for (l = FALCON_LOGN; l > 0; l -= 2)
     {
         len = 1 << (l - 2);
+        leftover = l == 1;
         for (unsigned i = 0; i < FALCON_N; i += 1 << l)
         {
             k1 = (FALCON_N + i) >> l;
@@ -38,10 +41,12 @@ void ntt2x2_ref(data_t a[FALCON_N])
                 b1 = a[j + 2 * len];
                 b2 = a[j + 3 * len];
 
-#if DEBUG == 2
-                printf("i :%3u, %3u, %3u, %3u,\n", a1, b1, a2, b2);
-                printf("w :%3u, %3u, %3u, %3u,\n", zeta1, zeta1, zeta2[0], zeta2[1]);
-#endif 
+                if (leftover)
+                {
+                    // This will not active, here to keep
+                    // the butterfly same as in left over loop
+                    goto no_go;
+                }
 
                 // Left
                 // a1 - b1, a2 - b2
@@ -54,12 +59,13 @@ void ntt2x2_ref(data_t a[FALCON_N])
                        a2, b2, k1);
 #endif
 
+            no_go:
                 // Right
                 // a1 - a2, b1 - b2
                 ctbf(a1, a2, zeta2[0], t1);
                 ctbf(b1, b2, zeta2[1], t2);
 
-#if DEBUG == 1
+#if DEBUG == 2
                 printf("[%d]: %u, %u = %u, %u | %u\n", len, j, j + len,
                        a1, a2, k2[0]);
                 printf("[%d]: %u, %u = %u, %u | %u\n", len, j + 2 * len, j + 3 * len,
@@ -69,9 +75,64 @@ void ntt2x2_ref(data_t a[FALCON_N])
                 a[j + len] = a2;
                 a[j + 2 * len] = b1;
                 a[j + 3 * len] = b2;
-#if DEBUG == 2
-                printf("o :%3u, %3u, %3u, %3u,\n\n", a1, a2, b1, b2);
-#endif 
+            }
+        }
+    }
+
+    // Left over layer will bypass half right
+    for (l = FALCON_LOGN & 1; l > 0; l--)
+    {
+        len = 1;
+        leftover = l == 1;
+        for (unsigned i = 0; i < FALCON_N; i += 4)
+        {
+            // k1 and zeta1 are don't care
+
+            k2[0] = (FALCON_N + i) >> l;
+            k2[1] = k2[0] + 1;
+            zeta2[0] = zetas_barrett[k2[0]];
+            zeta2[1] = zetas_barrett[k2[1]];
+
+            for (unsigned j = i; j < i + len; j++)
+            {
+                a1 = a[j];
+                a2 = a[j + len];
+                b1 = a[j + 2 * len];
+                b2 = a[j + 3 * len];
+
+                if (leftover)
+                {
+                    // This is ACTIVE
+                    goto bypass;
+                }
+
+                // Left
+                // a1 - b1, a2 - b2
+                ctbf(a1, b1, zeta1, t1);
+                ctbf(a2, b2, zeta1, t2);
+#if DEBUG == 3
+                printf("[%d]: %u, %u = %u, %u | %u\n", 2 * len, j, j + 2 * len,
+                       a1, b1, k1);
+                printf("[%d]: %u, %u = %u, %u | %u\n", 2 * len, j + len, j + 3 * len,
+                       a2, b2, k1);
+#endif
+
+            bypass:
+                // Right
+                // a1 - a2, b1 - b2
+                ctbf(a1, a2, zeta2[0], t1);
+                ctbf(b1, b2, zeta2[1], t2);
+
+#if DEBUG == 4
+                printf("[%d]: %u, %u = %u, %u | %u\n", len, j, j + len,
+                       a1, a2, k2[0]);
+                printf("[%d]: %u, %u = %u, %u | %u\n", len, j + 2 * len, j + 3 * len,
+                       b1, b2, k2[1]);
+#endif
+                a[j] = a1;
+                a[j + len] = a2;
+                a[j + 2 * len] = b1;
+                a[j + 3 * len] = b2;
             }
         }
     }
