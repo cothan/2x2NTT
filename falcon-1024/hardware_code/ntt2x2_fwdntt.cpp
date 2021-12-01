@@ -16,8 +16,12 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
     data_t fifo_d[DEPT_D] = {0};
     data_t fifo_w[DEPT_W][DEPT_W] = {{0}};
 
-    // Initialize Forward NTT
+    // Initialize Forward NTT for 1024 or 256
+#if FALCON_MODE == 5
     unsigned fw_ntt_pattern[] = {6, 4, 2, 0, 6};
+#elif FALCON_MODE == 0
+    unsigned fw_ntt_pattern[] = {4, 2, 0, 4};
+#endif 
     unsigned s, last = 0;
 
     // Initialize twiddle
