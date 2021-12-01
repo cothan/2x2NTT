@@ -11,7 +11,7 @@
 unsigned resolve_address(enum MAPPING mapping, unsigned addr)
 {
     unsigned ram_i;
-    const unsigned f = BRAM_DEPT >> 2;
+    const unsigned f = FALCON_N >> 4;
     switch (mapping)
     {
     case AFTER_INVNTT:
