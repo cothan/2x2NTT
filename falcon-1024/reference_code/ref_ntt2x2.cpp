@@ -18,7 +18,7 @@ void ntt2x2_ref(data_t a[FALCON_N])
     data_t a1, b1, a2, b2;
     data_t t1, t2;
     data_t k1, k2[2];
-    printf("ref ntt2x2\n");
+
     for (int l = FALCON_LOGN; l > 0; l -= 2)
     {
         len = 1 << (l - 2);
