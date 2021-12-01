@@ -18,7 +18,7 @@ void ntt2x2_ref(data_t a[FALCON_N])
     data_t a1, b1, a2, b2;
     data_t t1, t2;
     data_t k1, k2[2];
-
+    printf("ref ntt2x2\n");
     for (int l = FALCON_LOGN; l > 0; l -= 2)
     {
         len = 1 << (l - 2);
@@ -38,6 +38,11 @@ void ntt2x2_ref(data_t a[FALCON_N])
                 b1 = a[j + 2 * len];
                 b2 = a[j + 3 * len];
 
+#if DEBUG == 2
+                printf("i :%3u, %3u, %3u, %3u,\n", a1, b1, a2, b2);
+                printf("w :%3u, %3u, %3u, %3u,\n", zeta1, zeta1, zeta2[0], zeta2[1]);
+#endif 
+
                 // Left
                 // a1 - b1, a2 - b2
                 ctbf(a1, b1, zeta1, t1);
@@ -54,7 +59,7 @@ void ntt2x2_ref(data_t a[FALCON_N])
                 ctbf(a1, a2, zeta2[0], t1);
                 ctbf(b1, b2, zeta2[1], t2);
 
-#if DEBUG == 2
+#if DEBUG == 1
                 printf("[%d]: %u, %u = %u, %u | %u\n", len, j, j + len,
                        a1, a2, k2[0]);
                 printf("[%d]: %u, %u = %u, %u | %u\n", len, j + 2 * len, j + 3 * len,
@@ -64,6 +69,9 @@ void ntt2x2_ref(data_t a[FALCON_N])
                 a[j + len] = a2;
                 a[j + 2 * len] = b1;
                 a[j + 3 * len] = b2;
+#if DEBUG == 2
+                printf("o :%3u, %3u, %3u, %3u,\n\n", a1, a2, b1, b2);
+#endif 
             }
         }
     }

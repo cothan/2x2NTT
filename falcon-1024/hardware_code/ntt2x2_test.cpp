@@ -25,8 +25,8 @@ int ntt2x2_NTT(data_t r_gold[FALCON_N])
     // Run the reference code
     ntt2x2_ref(r_gold);
 
-    print_array(r_gold, FALCON_N, "r_gold");
-    print_reshaped_array(&ram, BRAM_DEPT, "ram");
+    // print_array(r_gold, FALCON_N, "r_gold");
+    // print_reshaped_array(&ram, BRAM_DEPT, "ram");
 
     int ret = compare_bram_array(&ram, r_gold, "ntt2x2_NTT", AFTER_NTT, 0);
 
