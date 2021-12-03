@@ -31,12 +31,13 @@ unsigned resolve_address(enum MAPPING mapping, unsigned addr)
     return ram_i;
 }
 
-void resolve_twiddle(unsigned tw_i[4], unsigned *last, unsigned tw_base_i[4],
+void resolve_twiddle(unsigned tw_i[4], unsigned tw_base_i[4],
                     const int k, const int s, enum OPERATION mode)
 {
     unsigned l1, l2, l3, l4;
     unsigned l1_base, l2_base, l3_base, l4_base;
-    unsigned t_last = *last;
+    const unsigned mask_s =  (1 << s) - 1; 
+    static unsigned count = 0;
     if (mode == INVERSE_NTT_MODE)
     {
         // INVERSE_NTT_MODE
@@ -78,7 +79,7 @@ void resolve_twiddle(unsigned tw_i[4], unsigned *last, unsigned tw_base_i[4],
         l3 = l3_base;
         l4 = l4_base;
 
-        if (s < (FALCON_LOGN - 2) && k == 0)
+        if (s < (FALCON_LOGN - 2 - (FALCON_LOGN & 1)) && k == 0)
         {
             tw_i[0] = l1;
             tw_i[1] = l2;
@@ -91,9 +92,9 @@ void resolve_twiddle(unsigned tw_i[4], unsigned *last, unsigned tw_base_i[4],
             tw_base_i[3] = l4_base;
         }
         // FORWARD_NTT_MODE
-        else if (s >= (FALCON_LOGN - 2) && !t_last)
+        else if (s >= (FALCON_LOGN - 2 - (FALCON_LOGN & 1)) && ((count & mask_s) == 0) )
         {
-            *last = 1;
+            printf("last\n");
 
             tw_i[0] = l1;
             tw_i[1] = l2;
@@ -105,5 +106,6 @@ void resolve_twiddle(unsigned tw_i[4], unsigned *last, unsigned tw_base_i[4],
             tw_base_i[2] = l3_base;
             tw_base_i[3] = l4_base;
         }
+        count++;
     }
 }
