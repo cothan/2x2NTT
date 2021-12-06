@@ -41,7 +41,7 @@ data_t FIFO(data_t fifo[DEPT], const data_t new_value)
  * [] -> [] -> [] -> []
  */
 template <int DEPT, typename T>
-void PIPO(T w_out[4], T fifo[DEPT][DEPT],
+void PIPO(T w_out[4], T fifo[DEPT][4],
           const T w_in[4])
 {
     w_out[0] = fifo[DEPT - 1][0];
@@ -51,7 +51,7 @@ void PIPO(T w_out[4], T fifo[DEPT][DEPT],
 
     for (int i = DEPT - 1; i > 0; i--)
     {
-        for (int j = 0; j < DEPT; j++)
+        for (int j = 0; j < 4; j++)
         {
             fifo[i][j] = fifo[i - 1][j];
         }
@@ -85,6 +85,24 @@ T FIFO_PISO(T fifo[DEPT], const bool piso_en, const T line[4], const T new_value
         fifo[0] = new_value;
     }
     return out;
+}
+
+template <int DEPT, typename T>
+void FIFO_PISO_2(T out[2], T fifo[DEPT], const bool piso_en, const T line[4])
+{
+    out[0] = fifo[DEPT - 1];
+    out[1] = fifo[DEPT - 2];
+    for (int i = DEPT - 1; i > 1; i--)
+    {
+        fifo[i] = fifo[i - 2];   
+    }
+    if (piso_en)
+    {
+        fifo[3] = line[0];
+        fifo[2] = line[1];
+        fifo[1] = line[2];
+        fifo[0] = line[3];
+    }
 }
 
 template <typename T>
@@ -156,6 +174,7 @@ void read_write_fifo(enum OPERATION mode,
                      const unsigned count)
 {
     T fa, fb, fc, fd;
+    T fb2[2], fd2[2];
     bool a_piso_en = false,
          b_piso_en = false,
          c_piso_en = false,
@@ -182,13 +201,25 @@ void read_write_fifo(enum OPERATION mode,
         a_piso_en = true;
         break;
     }
-    a_piso_en &= (mode == FORWARD_NTT_MODE);
-    b_piso_en &= (mode == FORWARD_NTT_MODE);
+    a_piso_en &= ((mode == FORWARD_NTT_MODE) || (mode == FORWARD_NTT_MODE_BYPASS));
+    b_piso_en &= ((mode == FORWARD_NTT_MODE) || (mode == FORWARD_NTT_MODE_BYPASS));
     c_piso_en &= (mode == FORWARD_NTT_MODE);
     d_piso_en &= (mode == FORWARD_NTT_MODE);
 
-    fd = FIFO_PISO<DEPT_A, T>(fifo_a, a_piso_en, data_in, new_value[0]);
-    fb = FIFO_PISO<DEPT_B, T>(fifo_b, b_piso_en, data_in, new_value[1]);
+
+    if (mode == FORWARD_NTT_MODE_BYPASS)
+    {
+        // FIFO but step by 2
+        FIFO_PISO_2<DEPT_A, T>(fd2, fifo_a, a_piso_en, data_in);
+        FIFO_PISO_2<DEPT_B, T>(fb2, fifo_b, b_piso_en, data_in);
+    }
+    else
+    {
+        // Original FIFO step by 1
+        fd = FIFO_PISO<DEPT_A, T>(fifo_a, a_piso_en, data_in, new_value[0]);
+        fb = FIFO_PISO<DEPT_B, T>(fifo_b, b_piso_en, data_in, new_value[1]);
+    }
+    
     fc = FIFO_PISO<DEPT_C, T>(fifo_c, c_piso_en, data_in, new_value[2]);
     fa = FIFO_PISO<DEPT_D, T>(fifo_d, d_piso_en, data_in, new_value[3]);
 
@@ -199,10 +230,18 @@ void read_write_fifo(enum OPERATION mode,
         data_out[2] = fb;
         data_out[3] = fd;
     }
+    else if (mode == FORWARD_NTT_MODE_BYPASS)
+    {
+        data_out[0] = fb2[0];
+        data_out[1] = fd2[0];
+        data_out[2] = fb2[1];
+        data_out[3] = fd2[1];
+    }
     else
     {
         read_fifo<T>(data_out, count, fifo_a, fifo_b, fifo_c, fifo_d);
     }
+    
 }
 
 #endif

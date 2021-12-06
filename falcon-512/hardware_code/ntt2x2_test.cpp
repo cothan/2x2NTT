@@ -113,7 +113,7 @@ int polymul(data_t a[FALCON_N], data_t b[FALCON_N])
     return ret;
 }
 
-#define TESTS 1000000
+#define TESTS 100000
 
 int main()
 {
@@ -151,10 +151,10 @@ int main()
             b[i] = t5 * 31 % FALCON_Q;
         }
 
-        ret |= ntt2x2_MUL(r_mul, test_ram);
+        // ret |= ntt2x2_MUL(r_mul, test_ram);
         ret |= ntt2x2_NTT(r_ntt);
-        ret |= ntt2x2_INVNTT(r_invntt);
-        ret |= polymul(a, b);
+        // ret |= ntt2x2_INVNTT(r_invntt);
+        // ret |= polymul(a, b);
 
         if (ret)
         {

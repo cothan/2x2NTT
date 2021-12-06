@@ -34,7 +34,7 @@ void update_indexes(unsigned tw_i[4],
     }
     else if (mode == FORWARD_NTT_MODE)
     {
-        if (s < (FALCON_LOGN - 2))
+        if (s < (FALCON_LOGN - 2 - (FALCON_LOGN & 1) ))
         {
             l1 = MAX<unsigned>(tw_base_i[0], (l1 + 1) & mask1);
             l2 = MAX<unsigned>(tw_base_i[1], (l2 + 1) & mask1);

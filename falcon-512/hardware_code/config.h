@@ -16,7 +16,9 @@ typedef BRAM<data_t> bram;
 enum OPERATION
 {
     FORWARD_NTT_MODE,
+    FORWARD_NTT_MODE_BYPASS,
     INVERSE_NTT_MODE,
+    INVERSE_NTT_MODE_BYPASS,
     MUL_MODE
 };
 

@@ -16,12 +16,12 @@ unsigned resolve_address(enum MAPPING mapping, unsigned addr)
     {
     case AFTER_INVNTT:
         // This can be implemented with shift and mask
-        ram_i = (addr % f)*4 + addr/f;
+        ram_i = (addr % f) * 4 + addr / f;
         break;
 
     case AFTER_NTT:
         // This can be implemented with shift and mask
-        ram_i = (addr % 4)*f + addr/4;
+        ram_i = (addr % 4) * f + addr / 4;
         break;
 
     case NATURAL:
@@ -31,13 +31,14 @@ unsigned resolve_address(enum MAPPING mapping, unsigned addr)
     return ram_i;
 }
 
-void resolve_twiddle(unsigned tw_i[4], unsigned tw_base_i[4],
-                    const int k, const int s, enum OPERATION mode)
+void resolve_twiddle(unsigned tw_i[4], unsigned *last,
+                     unsigned tw_base_i[4],
+                     const int k, const int s, enum OPERATION mode)
 {
     unsigned l1, l2, l3, l4;
     unsigned l1_base, l2_base, l3_base, l4_base;
-    const unsigned mask_s =  (1 << s) - 1; 
-    static unsigned count = 0;
+    const unsigned mask_s = (1 << s) - 1;
+    unsigned t_last = *last;
     if (mode == INVERSE_NTT_MODE)
     {
         // INVERSE_NTT_MODE
@@ -65,11 +66,22 @@ void resolve_twiddle(unsigned tw_i[4], unsigned tw_base_i[4],
             tw_base_i[3] = l4_base;
         }
     }
-    else if (mode == FORWARD_NTT_MODE)
+    else if ((mode == FORWARD_NTT_MODE) ||
+             (mode == FORWARD_NTT_MODE_BYPASS))
     {
-        l1_base = l2_base = 1 << s;
-        l3_base = (1 << (s + 1));
-        l4_base = (1 << (s + 1)) + 1;
+        if (mode == FORWARD_NTT_MODE_BYPASS)
+        {
+            l1_base = 0;
+            l2_base = 0;
+            l3_base = FALCON_N >> 1;
+            l4_base = (FALCON_N >> 1) + 1;
+        }
+        else
+        {
+            l1_base = l2_base = 1 << s;
+            l3_base = (1 << (s + 1));
+            l4_base = (1 << (s + 1)) + 1;
+        }
 
         // FORWARD_NTT_MODE
         // Layer s
@@ -92,10 +104,8 @@ void resolve_twiddle(unsigned tw_i[4], unsigned tw_base_i[4],
             tw_base_i[3] = l4_base;
         }
         // FORWARD_NTT_MODE
-        else if (s >= (FALCON_LOGN - 2 - (FALCON_LOGN & 1)) && ((count & mask_s) == 0) )
+        else if (s >= (FALCON_LOGN - 2 - (FALCON_LOGN & 1)) && ((t_last & mask_s) == 0))
         {
-            printf("last\n");
-
             tw_i[0] = l1;
             tw_i[1] = l2;
             tw_i[2] = l3;
@@ -106,6 +116,7 @@ void resolve_twiddle(unsigned tw_i[4], unsigned tw_base_i[4],
             tw_base_i[2] = l3_base;
             tw_base_i[3] = l4_base;
         }
-        count++;
+        t_last++;
+        *last = t_last;
     }
 }

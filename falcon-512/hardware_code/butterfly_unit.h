@@ -17,7 +17,8 @@ void butterfly(enum OPERATION mode, T *bj, T *bjlen,
     aj1 = aj;
     ajlen1 = ajlen;
 
-    if (mode == INVERSE_NTT_MODE)
+    if ((mode == INVERSE_NTT_MODE) ||
+        (mode == INVERSE_NTT_MODE_BYPASS))
     {
         /* 
          * t = a[j];
@@ -39,7 +40,8 @@ void butterfly(enum OPERATION mode, T *bj, T *bjlen,
     ajlen3 = ((T2)zeta * ajlen2) % FALCON_Q;
     aj3 = aj2;
 
-    if (mode == FORWARD_NTT_MODE)
+    if ((mode == FORWARD_NTT_MODE) ||
+        (mode == FORWARD_NTT_MODE_BYPASS))
     {
         /* 
          * t = ((uint32_t)zeta * a[j + len]) % FALCON_Q;
@@ -56,7 +58,8 @@ void butterfly(enum OPERATION mode, T *bj, T *bjlen,
         aj4 = aj3;
     }
 
-    if (mode == INVERSE_NTT_MODE)
+    if ((mode == INVERSE_NTT_MODE) ||
+        (mode == INVERSE_NTT_MODE_BYPASS))
     {
         if (aj4 & 1)
         {
@@ -91,7 +94,7 @@ void buttefly_circuit(T data_out[4], const T data_in[4], const T w[4], enum OPER
 {
     // 4 pipeline stages
     T w1, w2, w3, w4;
-    T save_b, save_d;
+    T save_a, save_b, save_c, save_d;
     T a0, b0, c0, d0;
     T a1, b1, c1, d1;
     T a2, b2, c2, d2;
@@ -118,10 +121,13 @@ void buttefly_circuit(T data_out[4], const T data_in[4], const T w[4], enum OPER
         printf("%d %d | %d\n", c, d, i2);
     } */
 
+    // printf("buf: %u, %u, |%u| %u, %u |%u|\n", a0, b0, w1, c0, d0, w2);
     butterfly<T2, T>(mode, &a1, &b1, w1, a0, b0);
     butterfly<T2, T>(mode, &c1, &d1, w2, c0, d0);
 
+    save_a = a1;
     save_b = b1;
+    save_c = c1;
     save_d = d1;
 
     a2 = a1;
@@ -151,24 +157,31 @@ void buttefly_circuit(T data_out[4], const T data_in[4], const T w[4], enum OPER
         printf("==============================%d %d | %d %d\n", ram_i / 4, ram_i, j, k);
     } */
 
+    // printf("buf: %u, %u, |%u| %u, %u |%u|\n", a2, b2, w3, c2, d2, w4);
     butterfly<T>(mode, &a3, &b3, w3, a2, b2);
     butterfly<T>(mode, &c3, &d3, w4, c2, d2);
 
-    if (mode == MUL_MODE)
+    switch (mode)
     {
-        // switch lane again, B->A, D->C
+    case MUL_MODE:
         data_out[0] = b3;
         data_out[1] = save_b;
         data_out[2] = d3;
         data_out[3] = save_d;
-    }
-    else
-    {
-        // NTT Mode
+        break;
+    
+    case FORWARD_NTT_MODE_BYPASS:
+        data_out[0] = save_a;
+        data_out[1] = save_b;
+        data_out[2] = save_c;
+        data_out[3] = save_d;
+        break;
+    default:
         data_out[0] = a3;
         data_out[1] = b3;
         data_out[2] = c3;
         data_out[3] = d3;
+        break;
     }
 }
 

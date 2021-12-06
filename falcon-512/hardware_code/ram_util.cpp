@@ -8,11 +8,20 @@ void read_ram(data_t data_out[4], const bram *ram, const unsigned ram_i)
     data_out[1] = ram->coeffs[ram_i][1];
     data_out[2] = ram->coeffs[ram_i][2];
     data_out[3] = ram->coeffs[ram_i][3];
+    // printf("[%d, %d, %d, %d] < [%d]\n", 
+    // data_out[0],
+    // data_out[1],
+    // data_out[2],
+    // data_out[3], ram_i);
 }
 
 void write_ram(bram *ram, const unsigned ram_i, const data_t data_in[4])
 {
-    // printf("[%d] < [%d, %d, %d, %d]\n", ram_i, a, b, c, d);
+    // printf("[%d] < [%d, %d, %d, %d]\n", ram_i, 
+    // data_in[0], 
+    // data_in[1], 
+    // data_in[2], 
+    // data_in[3]);
     ram->coeffs[ram_i][0] = data_in[0];
     ram->coeffs[ram_i][1] = data_in[1];
     ram->coeffs[ram_i][2] = data_in[2];
