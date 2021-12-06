@@ -68,3 +68,4 @@ dilithium/ntt2x2_test
 falcon-1024/hardware_code/*.log
 falcon-1024/reference_code/ref_test_ntt_ntt2x2
 falcon-1024/hardware_code/ntt2x2_test
+falcon-512/hardware_code/ntt2x2_test
