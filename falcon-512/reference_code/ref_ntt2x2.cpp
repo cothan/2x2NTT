@@ -21,6 +21,7 @@ void ntt2x2_ref(data_t a[FALCON_N])
     int l;
 
     // The two loops are similar actually.
+    // 9 -> 1 
     for (l = FALCON_LOGN; l > (FALCON_LOGN & 1); l -= 2)
     {
         len = 1 << (l - 2);
@@ -40,6 +41,12 @@ void ntt2x2_ref(data_t a[FALCON_N])
                 b1 = a[j + 2 * len];
                 b2 = a[j + 3 * len];
 
+#if DEBUG == 2
+                printf("i :%3u, %3u, %3u, %3u,\n", a1, b1, a2, b2);
+                printf("w :%3u, %3u, %3u, %3u,\n", zeta1, zeta1, zeta2[0], zeta2[1]);
+                printf("w :%3u, %3u, %3u, %3u,\n", k1, k1, k2[0], k2[1]);
+#endif 
+
                 // Left
                 // a1 - b1, a2 - b2
                 ctbf(a1, b1, zeta1, t1);
@@ -55,12 +62,16 @@ void ntt2x2_ref(data_t a[FALCON_N])
                 ctbf(a1, a2, zeta2[0], t1);
                 ctbf(b1, b2, zeta2[1], t2);
 
-#if DEBUG == 2
+#if DEBUG == 1
                 printf("[%d]: %u, %u = %u, %u | %u\n", len, j, j + len,
                        a1, a2, k2[0]);
                 printf("[%d]: %u, %u = %u, %u | %u\n", len, j + 2 * len, j + 3 * len,
                        b1, b2, k2[1]);
 #endif
+
+#if DEBUG == 2
+                printf("o :%3u, %3u, %3u, %3u,\n\n", a1, a2, b1, b2);
+#endif 
                 a[j] = a1;
                 a[j + len] = a2;
                 a[j + 2 * len] = b1;
@@ -70,6 +81,7 @@ void ntt2x2_ref(data_t a[FALCON_N])
     }
     // This is similar to the 1st loop, just the 2 outter loops for `l` are difference
     // Left over layer will bypass half right
+    // 1 -> 0
     for (l = (FALCON_LOGN & 1); l > 0; l--)
     {
         len = 1;
@@ -89,6 +101,12 @@ void ntt2x2_ref(data_t a[FALCON_N])
                 b1 = a[j + 2 * len];
                 b2 = a[j + 3 * len];
 
+#if DEBUG == 99
+                printf("i :%3u, %3u, %3u, %3u,\n", j, j + len, j + 2*len, j + 3*len);
+                printf("i :%3u, %3u, %3u, %3u,\n", a1, a2, b1, b2);
+                printf("w :%3u, %3u,\n", zeta2[0], zeta2[1]);
+                printf("w :%3u, %3u,\n", k2[0], k2[1]);
+#endif 
                 // Right
                 // a1 - a2, b1 - b2
                 ctbf(a1, a2, zeta2[0], t1);
@@ -100,6 +118,10 @@ void ntt2x2_ref(data_t a[FALCON_N])
                 printf("[%d]: %u, %u = %u, %u | %u\n", len, j + 2 * len, j + 3 * len,
                        b1, b2, k2[1]);
 #endif
+
+#if DEBUG == 99
+                printf("o :%3u, %3u, %3u, %3u,\n\n", a1, a2, b1, b2);
+#endif 
                 a[j] = a1;
                 a[j + len] = a2;
                 a[j + 2 * len] = b1;
@@ -134,6 +156,7 @@ void invntt2x2_ref(data_t a[FALCON_N])
     data_t k1[2], k2;
     data_t zeta1[2], zeta2;
 
+    // 0 -> 1
     for (int l = 0; l < (FALCON_LOGN & 1); l++)
     {
         len = 1 << l; 
@@ -153,6 +176,11 @@ void invntt2x2_ref(data_t a[FALCON_N])
                 b1 = a[j + 2 * len];
                 b2 = a[j + 3 * len];
 
+#if DEBUG == 99
+                printf("i :%3u, %3u, %3u, %3u,\n", j, j + len, j + 2*len, j + 3*len);
+                printf("w: %3u, %3u, %3u, %3u\n", k1[0], k1[0], k1[1], k1[1]);
+#endif 
+
                 // Left
                 // a1 - a2, b1 - b2
                 gsbf_div2(a1, a2, zeta1[0], t1);
@@ -171,6 +199,7 @@ void invntt2x2_ref(data_t a[FALCON_N])
         }
     }
 
+    // 1 -> 9 
     for (int l = (FALCON_LOGN & 1); l < FALCON_LOGN; l += 2)
     {
         len = 1 << l;
@@ -194,6 +223,11 @@ void invntt2x2_ref(data_t a[FALCON_N])
                 // a1 - a2, b1 - b2
                 gsbf_div2(a1, a2, zeta1[0], t1);
                 gsbf_div2(b1, b2, zeta1[1], t2);
+
+#if DEBUG == 99
+                printf("i :%3u, %3u, %3u, %3u,\n", j, j + len, j + 2*len, j + 3*len);
+                printf("w: %3u, %3u, %3u, %3u\n", k1[0], k1[1], k2);
+#endif 
 #if DEBUG == 5
                 printf("[%d]: %u, %u = %u, %u | %u\n", len, j, j + len,
                        a1, a2, k1[0]);
