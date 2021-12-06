@@ -151,9 +151,9 @@ int main()
             b[i] = t5 * 31 % FALCON_Q;
         }
 
-        // ret |= ntt2x2_MUL(r_mul, test_ram);
+        ret |= ntt2x2_MUL(r_mul, test_ram);
         ret |= ntt2x2_NTT(r_ntt);
-        // ret |= ntt2x2_INVNTT(r_invntt);
+        ret |= ntt2x2_INVNTT(r_invntt);
         // ret |= polymul(a, b);
 
         if (ret)
