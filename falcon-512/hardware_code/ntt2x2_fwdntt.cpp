@@ -139,9 +139,9 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
         /* ============================================== */
     }
 
-    // Empty all data in FIFO, 
-    // the next loop will stall 2 cycles, 
-    // in hardware, the controller for FIFO is independent, 
+    // Empty all data in FIFO,
+    // the next loop will stall 2 cycles,
+    // in hardware, the controller for FIFO is independent,
     // thus it won't have stall in RTL implementation
     for (unsigned i = 0; i < DEPT_W; i++)
     {
@@ -207,7 +207,7 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
              */
             w_in[0] = w_in[2];
             w_in[1] = w_in[3];
-            PIPO<DEPT_W-2, data_t>(w_out, fifo_w, w_in);
+            PIPO<DEPT_W - 2, data_t>(w_out, fifo_w, w_in);
             /* ============================================== */
 
             // Calculate
@@ -215,14 +215,7 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
                                               w_out, FORWARD_NTT_MODE_BYPASS);
 
             /* ============================================== */
-            if (i > 3)
-            {
-                write_en = true;
-            }
-            if (write_en)
-            {
-                write_ram(ram, fi, data_out);
-            }
+            write_ram(ram, fi, data_out);
 
             /* ============================================== */
             // Update loop
@@ -249,20 +242,20 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
         }
     }
 
-    for (unsigned i = 0; i < DEPT_W-2; i++)
+    for (unsigned i = 0; i < DEPT_W - 2; i++)
     {
         // Extract left over data in FIFO to data_in
         read_write_fifo<data_t>(FORWARD_NTT_MODE_BYPASS, data_fifo, data_in, null, fifo_a,
-                                    fifo_b, fifo_c, fifo_d, count);
+                                fifo_b, fifo_c, fifo_d, count);
 
         // Rolling FIFO for index of RAM
         unsigned fi = FIFO<DEPT_W - 2>(fifo_i, 0);
 
         // Buffer twiddle
-        PIPO<DEPT_W-2, data_t>(w_out, fifo_w, null);
+        PIPO<DEPT_W - 2, data_t>(w_out, fifo_w, null);
 
         buttefly_circuit<data2_t, data_t>(data_out, data_fifo,
-                                        w_out, FORWARD_NTT_MODE_BYPASS);
+                                          w_out, FORWARD_NTT_MODE_BYPASS);
 
         // Write back
         write_ram(ram, fi, data_out);
