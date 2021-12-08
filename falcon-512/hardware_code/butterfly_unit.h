@@ -157,8 +157,8 @@ void buttefly_circuit(T data_out[4], const T data_in[4], const T w[4], enum OPER
         printf("==============================%d %d | %d %d\n", ram_i / 4, ram_i, j, k);
     } */
 
-    butterfly<T>(mode, &a3, &b3, w3, a2, b2);
-    butterfly<T>(mode, &c3, &d3, w4, c2, d2);
+    butterfly<T2, T>(mode, &a3, &b3, w3, a2, b2);
+    butterfly<T2, T>(mode, &c3, &d3, w4, c2, d2);
 
     switch (mode)
     {
