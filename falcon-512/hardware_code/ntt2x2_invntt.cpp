@@ -8,7 +8,6 @@
 #include <cstdio>
 #include <cstring>
 
-#define DEBUG 0
 
 /* Inverse NTT
  * Input: ram, zetas_barret, mode, mapping
@@ -97,16 +96,6 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             read_write_fifo<data_t>(INVERSE_NTT_MODE_BYPASS, data_fifo, null, data_out, fifo_a,
                                     fifo_b, fifo_c, fifo_d, count);
 
-
-            // Write data_out to FIFO A, B, C, D
-            // print_array<data_t>(data_out, 4, "data_in");
-            // print_array<data_t>(fifo_i, DEPT_I - 1, "FIFO_I");
-            // print_array<data_t>(fifo_a, DEPT_A, "FIFO_A");
-            // print_array<data_t>(fifo_b, DEPT_B, "FIFO_B");
-            // print_array<data_t>(fifo_c, DEPT_C, "FIFO_C");
-            // print_array<data_t>(fifo_d, DEPT_D, "FIFO_D");
-            // print_array<data_t>(data_fifo, 4, "data_fifo");
-
             /* ============================================== */
             // Conditional
             if (i == DEPT_I - 1)
@@ -157,10 +146,6 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
         count = (count + 2) & 3;
         read_write_fifo<data_t>(INVERSE_NTT_MODE_BYPASS, data_fifo, null, null, fifo_a, fifo_b, fifo_c, fifo_d, count);
 
-        // print_array<data_t>(fifo_i, DEPT_I - 1, "FIFO_I");
-        // print_array<data_t>(fifo_a, DEPT_A, "FIFO_A");
-        // print_array<data_t>(fifo_b, DEPT_B, "FIFO_B");
-
         /* ============================================== */
         // Write back
         write_ram(ram, fi, data_fifo);
@@ -170,7 +155,6 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
     count = 0;
     for (unsigned l = (FALCON_LOGN & 1); l < FALCON_LOGN; l += 2)
     {
-        // printf("==========\n");
         for (unsigned i = 0; i < BRAM_DEPT; ++i)
         {
             /* ============================================== */
@@ -205,13 +189,6 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             // Rolling FIFO index
             unsigned fi = FIFO<DEPT_I>(fifo_i, ram_i);
 
-#if DEBUG == 99
-            printf("addr = %d\n", addr);
-            print_array(data_in, 4, "i");
-            print_array(w_in, 4, "w");
-            print_array(data_out, 4, "o");
-            printf("\n");
-#endif 
             // Replace by single write FIFO, null as output since we don't care about output
             // Rolling FIFO and extract data
             count = (count + 1) & 3;
@@ -220,10 +197,6 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
 
             /* ============================================== */
             // Conditional
-            if (count == 0 && i != 0)
-            {
-                write_en = true;
-            }
 
             // Write back
             if (write_en)
@@ -259,18 +232,10 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
 
     for (unsigned i = 0; i < DEPT_I; i++)
     {
-        // #pragma HLS PIPELINE II = 1
-
         /* ============================================== */
         // Emptying FIFO
         // Rolling FIFO index
         unsigned fi = FIFO<DEPT_I>(fifo_i, 0);
-
-        // Write data_out to FIFO A, B, C, D
-        // FIFO<DEPT_A>(fifo_a, 0);
-        // FIFO<DEPT_B>(fifo_b, 0);
-        // FIFO<DEPT_C>(fifo_c, 0);
-        // FIFO<DEPT_D>(fifo_d, 0);
 
         // Rolling the FIFO and extract data from FIFO
         count = (count + 1) & 3;
@@ -279,18 +244,5 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
         /* ============================================== */
         // Write back
         write_ram(ram, fi, data_fifo);
-
-        // printf("--------------\n");
-        // print_array(fifo_i, DEPT_I, "FIFO_I");
-        // print_array(fifo_a, DEPT_A, "FIFO_A");
-        // print_array(fifo_b, DEPT_B, "FIFO_B");
-        // print_array(fifo_c, DEPT_C, "FIFO_C");
-        // print_array(fifo_d, DEPT_D, "FIFO_D");
     }
-
-    // TODO: debug from level 9
-
-    // print_reshaped_array(ram, BRAM_DEPT, "ram");
-
-    //
 }
