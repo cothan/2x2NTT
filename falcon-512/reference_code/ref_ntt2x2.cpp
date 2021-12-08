@@ -101,7 +101,7 @@ void ntt2x2_ref(data_t a[FALCON_N])
                 b1 = a[j + 2 * len];
                 b2 = a[j + 3 * len];
 
-#if DEBUG == 99
+#if DEBUG == 2
                 printf("i :%3u, %3u, %3u, %3u,\n", j, j + len, j + 2*len, j + 3*len);
                 printf("i :%3u, %3u, %3u, %3u,\n", a1, a2, b1, b2);
                 printf("w :%3u, %3u,\n", zeta2[0], zeta2[1]);
@@ -119,7 +119,7 @@ void ntt2x2_ref(data_t a[FALCON_N])
                        b1, b2, k2[1]);
 #endif
 
-#if DEBUG == 99
+#if DEBUG == 2
                 printf("o :%3u, %3u, %3u, %3u,\n\n", a1, a2, b1, b2);
 #endif 
                 a[j] = a1;
@@ -187,9 +187,9 @@ void invntt2x2_ref(data_t a[FALCON_N])
                 gsbf_div2(b1, b2, zeta1[1], t2);
 #if DEBUG == 4
                 printf("[%d]: %u, %u = %u, %u | %u\n", len, j, j + len,
-                       a1, a2, k1[0]);
+                       a1, a2, zeta1[0]);
                 printf("[%d]: %u, %u = %u, %u | %u\n", len, j + 2 * len, j + 3 * len,
-                       b1, b2, k1[1]);
+                       b1, b2, zeta1[1]);
 #endif
                 a[j] = a1;
                 a[j + len] = a2;
@@ -219,15 +219,16 @@ void invntt2x2_ref(data_t a[FALCON_N])
                 b1 = a[j + 2 * len];
                 b2 = a[j + 3 * len];
 
+#if DEBUG == 99
+                printf("i :%3u, %3u, %3u, %3u,\n", j, j + len, j + 2*len, j + 3*len);
+                printf("i :%3u, %3u, %3u, %3u,\n", a1, a2, b1, b2);
+                printf("w: %3u, %3u, %3u, %3u\n", zeta1[0], zeta1[1], zeta2, zeta2);
+#endif 
                 // Left
                 // a1 - a2, b1 - b2
                 gsbf_div2(a1, a2, zeta1[0], t1);
                 gsbf_div2(b1, b2, zeta1[1], t2);
 
-#if DEBUG == 99
-                printf("i :%3u, %3u, %3u, %3u,\n", j, j + len, j + 2*len, j + 3*len);
-                printf("w: %3u, %3u, %3u, %3u\n", k1[0], k1[1], k2);
-#endif 
 #if DEBUG == 5
                 printf("[%d]: %u, %u = %u, %u | %u\n", len, j, j + len,
                        a1, a2, k1[0]);
@@ -239,7 +240,12 @@ void invntt2x2_ref(data_t a[FALCON_N])
                 // a1 - b1, a2 - b2
                 gsbf_div2(a1, b1, zeta2, t1);
                 gsbf_div2(a2, b2, zeta2, t2);
-#if DEBUG == 6
+
+#if DEBUG == 99
+                printf("o :%3u, %3u, %3u, %3u,\n\n", a1, a2, b1, b2);
+#endif 
+
+#if DEBUG == 5
                 printf("[%d]: %u, %u = %u, %u | %u\n", 2 * len, j, j + 2 * len,
                        a1, b1, k2);
                 printf("[%d]: %u, %u = %u, %u | %u\n", 2 * len, j + len, j + 3 * len,
