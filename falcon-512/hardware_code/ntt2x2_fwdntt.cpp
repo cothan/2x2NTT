@@ -162,10 +162,10 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
         write_ram(ram, fi, data_out);
     }
 
+    count = 1;
     // For this loop, bypass in BF then store right back, like in MUL
     for (unsigned l = (FALCON_LOGN - (FALCON_LOGN & 1)); l < FALCON_LOGN; l++)
     {
-        count = 1;
         for (unsigned i = 0; i < BRAM_DEPT; i++)
         {
             /* ============================================== */
