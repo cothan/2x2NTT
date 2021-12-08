@@ -2,6 +2,7 @@
 #define BUTTERFLY_UNITS_H
 
 #include "../params.h"
+#include <stdio.h>
 
 template <typename T2, typename T>
 void butterfly(enum OPERATION mode, T *bj, T *bjlen,
@@ -124,6 +125,7 @@ void buttefly_circuit(T data_out[4], const T data_in[4], const T w[4], enum OPER
     // printf("buf: %u, %u, |%u| %u, %u |%u|\n", a0, b0, w1, c0, d0, w2);
     butterfly<T2, T>(mode, &a1, &b1, w1, a0, b0);
     butterfly<T2, T>(mode, &c1, &d1, w2, c0, d0);
+    // printf("buf: %u, %u, |%u| %u, %u |%u|\n", a1, b1, w1, c1, d1, w2);
 
     save_a = a1;
     save_b = b1;
@@ -171,11 +173,13 @@ void buttefly_circuit(T data_out[4], const T data_in[4], const T w[4], enum OPER
         break;
     
     case FORWARD_NTT_MODE_BYPASS:
+    case INVERSE_NTT_MODE_BYPASS:
         data_out[0] = save_a;
         data_out[1] = save_b;
         data_out[2] = save_c;
         data_out[3] = save_d;
         break;
+
     default:
         data_out[0] = a3;
         data_out[1] = b3;

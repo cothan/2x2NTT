@@ -23,7 +23,15 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
     // data_t fa, fb, fc, fd;
 
     // Initialize Forward NTT
+#if FALCON_MODE == 5
     unsigned fw_ntt_pattern[] = {6, 4, 2, 0, 6};
+#elif FALCON_MODE == 1
+    unsigned fw_ntt_pattern[] = {5, 3, 1, 6, 5};
+#elif FALCON_MODE == 0
+    unsigned fw_ntt_pattern[] = {4, 2, 0, 4};
+#else
+#error "FALCON_MODE supports [0,1,5]"
+#endif
     unsigned s, last = 0;
 
     // Initialize twiddle
@@ -40,15 +48,15 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
            data_out[4] = {0};
 
     // Initialize writeback
-    unsigned count = 0; // 2-bit counter
+    unsigned count; // 2-bit counter
     bool write_en = false;
 
-    for (unsigned l = 0; l < FALCON_LOGN; l += 2)
+    // Bypass loop
+    count = 3;
+    for (unsigned l = 0; l < (FALCON_LOGN & 1); l++)
     {
         for (unsigned i = 0; i < BRAM_DEPT; ++i)
         {
-            // #pragma HLS LOOP_FLATTEN
-            // #pragma HLS PIPELINE II = 1
             /* ============================================== */
 
             if (i == 0)
@@ -64,6 +72,7 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             unsigned ram_i = resolve_address(mapping, addr);
 
             // Read ram by address
+            // printf("\naddr = %u\n", ram_i);
             read_ram(data_in, ram, ram_i);
 
             // Prepare twiddle
@@ -75,27 +84,30 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             /* ============================================== */
 
             // Calculate
-            buttefly_circuit<data2_t, data_t>(data_out, data_in, w_in, mode);
+            buttefly_circuit<data2_t, data_t>(data_out, data_in,
+                                              w_in, INVERSE_NTT_MODE_BYPASS);
 
             /* ============================================== */
-            // Rolling FIFO index
-            unsigned fi = FIFO<DEPT_I>(fifo_i, ram_i);
-
-            // Write data_out to FIFO A, B, C, D
-            // FIFO_PISO<DEPT_A, data_t>(fifo_a, false, data_fifo, data_out[0]);
-            // FIFO_PISO<DEPT_B, data_t>(fifo_b, false, data_fifo, data_out[1]);
-            // FIFO_PISO<DEPT_C, data_t>(fifo_c, false, data_fifo, data_out[2]);
-            // FIFO_PISO<DEPT_D, data_t>(fifo_d, false, data_fifo, data_out[3]);
-
+            unsigned fi = FIFO<DEPT_I - 1>(fifo_i, ram_i);
             // Replace by single write FIFO, null as output since we don't care about output
             // Rolling FIFO and extract data
-            count = (count + 1) & 3;
-            read_write_fifo<data_t>(mode, data_fifo, null, data_out, fifo_a,
+            count = (count + 2) & 3;
+            read_write_fifo<data_t>(INVERSE_NTT_MODE_BYPASS, data_fifo, null, data_out, fifo_a,
                                     fifo_b, fifo_c, fifo_d, count);
+
+
+            // Write data_out to FIFO A, B, C, D
+            // print_array<data_t>(data_out, 4, "data_in");
+            // print_array<data_t>(fifo_i, DEPT_I - 1, "FIFO_I");
+            // print_array<data_t>(fifo_a, DEPT_A, "FIFO_A");
+            // print_array<data_t>(fifo_b, DEPT_B, "FIFO_B");
+            // print_array<data_t>(fifo_c, DEPT_C, "FIFO_C");
+            // print_array<data_t>(fifo_d, DEPT_D, "FIFO_D");
+            // print_array<data_t>(data_fifo, 4, "data_fifo");
 
             /* ============================================== */
             // Conditional
-            if (count == 0 && i != 0)
+            if (i == DEPT_I - 1)
             {
                 write_en = true;
             }
@@ -132,34 +144,149 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
         /* ============================================== */
     }
 
-    for (unsigned i = 0; i < DEPT_I; i++)
+    for (unsigned i = 0; i < DEPT_I - 1; i++)
     {
-        // #pragma HLS PIPELINE II = 1
-
         /* ============================================== */
         // Emptying FIFO
         // Rolling FIFO index
-        unsigned fi = FIFO<DEPT_I>(fifo_i, 0);
-
-        // Write data_out to FIFO A, B, C, D
-        // FIFO<DEPT_A>(fifo_a, 0);
-        // FIFO<DEPT_B>(fifo_b, 0);
-        // FIFO<DEPT_C>(fifo_c, 0);
-        // FIFO<DEPT_D>(fifo_d, 0);
+        unsigned fi = FIFO<DEPT_I - 1>(fifo_i, 0);
 
         // Rolling the FIFO and extract data from FIFO
-        count = (count + 1) & 3;
-        read_write_fifo<data_t>(mode, data_fifo, null, null, fifo_a, fifo_b, fifo_c, fifo_d, count);
+        count = (count + 2) & 3;
+        read_write_fifo<data_t>(INVERSE_NTT_MODE_BYPASS, data_fifo, null, null, fifo_a, fifo_b, fifo_c, fifo_d, count);
+
+        // print_array<data_t>(fifo_i, DEPT_I - 1, "FIFO_I");
+        // print_array<data_t>(fifo_a, DEPT_A, "FIFO_A");
+        // print_array<data_t>(fifo_b, DEPT_B, "FIFO_B");
 
         /* ============================================== */
         // Write back
         write_ram(ram, fi, data_fifo);
-
-        // printf("--------------\n");
-        // print_array(fifo_i, DEPT_I, "FIFO_I");
-        // print_array(fifo_a, DEPT_A, "FIFO_A");
-        // print_array(fifo_b, DEPT_B, "FIFO_B");
-        // print_array(fifo_c, DEPT_C, "FIFO_C");
-        // print_array(fifo_d, DEPT_D, "FIFO_D");
     }
+
+    // // Normal loop
+    // count = 0;
+    // for (unsigned l = (FALCON_LOGN & 1); l < FALCON_LOGN; l += 2)
+    // {
+    //     for (unsigned i = 0; i < BRAM_DEPT; ++i)
+    //     {
+    //         /* ============================================== */
+
+    //         if (i == 0)
+    //         {
+    //             k = j = 0;
+    //         }
+
+    //         /* ============================================== */
+
+    //         unsigned addr = k + j;
+
+    //         // Prepare address
+    //         unsigned ram_i = resolve_address(mapping, addr);
+
+    //         // Read ram by address
+    //         read_ram(data_in, ram, ram_i);
+
+    //         // Prepare twiddle
+    //         resolve_twiddle(tw_i, &last, tw_base_i, k, l, mode);
+
+    //         // Read twiddle
+    //         read_twiddle(w_in, mode, tw_i);
+
+    //         /* ============================================== */
+
+    //         // Calculate
+    //         buttefly_circuit<data2_t, data_t>(data_out, data_in, w_in, mode);
+
+    //         /* ============================================== */
+    //         // Rolling FIFO index
+    //         unsigned fi = FIFO<DEPT_I>(fifo_i, ram_i);
+
+    //         // Write data_out to FIFO A, B, C, D
+    //         // FIFO_PISO<DEPT_A, data_t>(fifo_a, false, data_fifo, data_out[0]);
+    //         // FIFO_PISO<DEPT_B, data_t>(fifo_b, false, data_fifo, data_out[1]);
+    //         // FIFO_PISO<DEPT_C, data_t>(fifo_c, false, data_fifo, data_out[2]);
+    //         // FIFO_PISO<DEPT_D, data_t>(fifo_d, false, data_fifo, data_out[3]);
+
+    //         // Replace by single write FIFO, null as output since we don't care about output
+    //         // Rolling FIFO and extract data
+    //         count = (count + 1) & 3;
+    //         read_write_fifo<data_t>(mode, data_fifo, null, data_out, fifo_a,
+    //                                 fifo_b, fifo_c, fifo_d, count);
+
+    //         /* ============================================== */
+    //         // Conditional
+    //         if (count == 0 && i != 0)
+    //         {
+    //             write_en = true;
+    //         }
+
+    //         // Write back
+    //         if (write_en)
+    //         {
+    //             write_ram(ram, fi, data_fifo);
+    //         }
+
+    //         /* ============================================== */
+    //         if (mode == FORWARD_NTT_MODE)
+    //         {
+    //             s = fw_ntt_pattern[l >> 1];
+    //         }
+    //         else
+    //         {
+    //             s = l;
+    //         }
+
+    //         // Update loop
+    //         if (k + (1 << s) < BRAM_DEPT)
+    //         {
+    //             k += (1 << s);
+    //         }
+    //         else
+    //         {
+    //             k = 0;
+    //             ++j;
+    //         }
+    //         if (l == 8) printf("%u addr = %u\n", l, addr);
+    //         update_indexes(tw_i, tw_base_i, l, mode);
+    //     }
+    //     /* ============================================== */
+    // }
+
+    // for (unsigned i = 0; i < DEPT_I; i++)
+    // {
+    //     // #pragma HLS PIPELINE II = 1
+
+    //     /* ============================================== */
+    //     // Emptying FIFO
+    //     // Rolling FIFO index
+    //     unsigned fi = FIFO<DEPT_I>(fifo_i, 0);
+
+    //     // Write data_out to FIFO A, B, C, D
+    //     // FIFO<DEPT_A>(fifo_a, 0);
+    //     // FIFO<DEPT_B>(fifo_b, 0);
+    //     // FIFO<DEPT_C>(fifo_c, 0);
+    //     // FIFO<DEPT_D>(fifo_d, 0);
+
+    //     // Rolling the FIFO and extract data from FIFO
+    //     count = (count + 1) & 3;
+    //     read_write_fifo<data_t>(mode, data_fifo, null, null, fifo_a, fifo_b, fifo_c, fifo_d, count);
+
+    //     /* ============================================== */
+    //     // Write back
+    //     write_ram(ram, fi, data_fifo);
+
+    //     // printf("--------------\n");
+    //     // print_array(fifo_i, DEPT_I, "FIFO_I");
+    //     // print_array(fifo_a, DEPT_A, "FIFO_A");
+    //     // print_array(fifo_b, DEPT_B, "FIFO_B");
+    //     // print_array(fifo_c, DEPT_C, "FIFO_C");
+    //     // print_array(fifo_d, DEPT_D, "FIFO_D");
+    // }
+
+    // TODO: debug from level 9
+
+    print_reshaped_array(ram, BRAM_DEPT, "ram");
+
+    //
 }
