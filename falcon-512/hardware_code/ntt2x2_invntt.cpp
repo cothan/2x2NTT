@@ -8,7 +8,6 @@
 #include <cstdio>
 #include <cstring>
 
-
 /* Inverse NTT
  * Input: ram, zetas_barret, mode, mapping
  * Output: ram 
@@ -89,7 +88,7 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
                                               w_in, INVERSE_NTT_MODE_BYPASS);
 
             /* ============================================== */
-            unsigned fi = FIFO<DEPT_I - 1>(fifo_i, ram_i);
+            unsigned fi = FIFO<2>(fifo_i, ram_i);
             // Replace by single write FIFO, null as output since we don't care about output
             // Rolling FIFO and extract data
             count = (count + 2) & 3;
@@ -98,7 +97,7 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
 
             /* ============================================== */
             // Conditional
-            if (i == DEPT_I - 1)
+            if (i == 2)
             {
                 write_en = true;
             }
@@ -135,12 +134,12 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
         /* ============================================== */
     }
 
-    for (unsigned i = 0; i < DEPT_I - 1; i++)
+    for (unsigned i = 0; i < 2; i++)
     {
         /* ============================================== */
         // Emptying FIFO
         // Rolling FIFO index
-        unsigned fi = FIFO<DEPT_I - 1>(fifo_i, 0);
+        unsigned fi = FIFO<2>(fifo_i, 0);
 
         // Rolling the FIFO and extract data from FIFO
         count = (count + 2) & 3;
@@ -224,7 +223,7 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
                 k = 0;
                 ++j;
             }
-            if (l == 8) printf("%u addr = %u\n", l, addr);
+
             update_indexes(tw_i, tw_base_i, l, mode);
         }
         /* ============================================== */

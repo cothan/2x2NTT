@@ -122,10 +122,8 @@ void buttefly_circuit(T data_out[4], const T data_in[4], const T w[4], enum OPER
         printf("%d %d | %d\n", c, d, i2);
     } */
 
-    // printf("buf: %u, %u, |%u| %u, %u |%u|\n", a0, b0, w1, c0, d0, w2);
     butterfly<T2, T>(mode, &a1, &b1, w1, a0, b0);
     butterfly<T2, T>(mode, &c1, &d1, w2, c0, d0);
-    // printf("buf: %u, %u, |%u| %u, %u |%u|\n", a1, b1, w1, c1, d1, w2);
 
     save_a = a1;
     save_b = b1;
@@ -159,7 +157,6 @@ void buttefly_circuit(T data_out[4], const T data_in[4], const T w[4], enum OPER
         printf("==============================%d %d | %d %d\n", ram_i / 4, ram_i, j, k);
     } */
 
-    // printf("buf: %u, %u, |%u| %u, %u |%u|\n", a2, b2, w3, c2, d2, w4);
     butterfly<T>(mode, &a3, &b3, w3, a2, b2);
     butterfly<T>(mode, &c3, &d3, w4, c2, d2);
 
@@ -171,14 +168,14 @@ void buttefly_circuit(T data_out[4], const T data_in[4], const T w[4], enum OPER
         data_out[2] = d3;
         data_out[3] = save_d;
         break;
-    
+
     case FORWARD_NTT_MODE_BYPASS:
         data_out[0] = save_a;
         data_out[1] = save_b;
         data_out[2] = save_c;
         data_out[3] = save_d;
         break;
-    
+
     case INVERSE_NTT_MODE_BYPASS:
         data_out[0] = save_a;
         data_out[1] = save_c;

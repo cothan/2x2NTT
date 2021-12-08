@@ -94,7 +94,7 @@ void FIFO_PISO_2(T out[2], T fifo[DEPT], const bool piso_en, const T line[4])
     out[1] = fifo[DEPT - 2];
     for (int i = DEPT - 1; i > 1; i--)
     {
-        fifo[i] = fifo[i - 2];   
+        fifo[i] = fifo[i - 2];
     }
     if (piso_en)
     {
@@ -201,12 +201,14 @@ void read_write_fifo(enum OPERATION mode,
         a_piso_en = true;
         break;
     }
-    a_piso_en &= ((mode == FORWARD_NTT_MODE) || (mode == FORWARD_NTT_MODE_BYPASS) || (mode == INVERSE_NTT_MODE_BYPASS));
-    b_piso_en &= ((mode == FORWARD_NTT_MODE) || (mode == FORWARD_NTT_MODE_BYPASS) || (mode == INVERSE_NTT_MODE_BYPASS));
+    a_piso_en &= ((mode == FORWARD_NTT_MODE) ||
+                  (mode == FORWARD_NTT_MODE_BYPASS) || (mode == INVERSE_NTT_MODE_BYPASS));
+    b_piso_en &= ((mode == FORWARD_NTT_MODE) ||
+                  (mode == FORWARD_NTT_MODE_BYPASS) || (mode == INVERSE_NTT_MODE_BYPASS));
     c_piso_en &= (mode == FORWARD_NTT_MODE);
     d_piso_en &= (mode == FORWARD_NTT_MODE);
 
-
+    // Depend on mode, data_in and new_value are interchange
     if (mode == FORWARD_NTT_MODE_BYPASS)
     {
         // FIFO but step by 2
@@ -225,13 +227,10 @@ void read_write_fifo(enum OPERATION mode,
         fd = FIFO_PISO<DEPT_A, T>(fifo_a, a_piso_en, data_in, new_value[0]);
         fb = FIFO_PISO<DEPT_B, T>(fifo_b, b_piso_en, data_in, new_value[1]);
     }
-    
-    if (mode != INVERSE_NTT_MODE_BYPASS)
-    {
-        fc = FIFO_PISO<DEPT_C, T>(fifo_c, c_piso_en, data_in, new_value[2]);
-        fa = FIFO_PISO<DEPT_D, T>(fifo_d, d_piso_en, data_in, new_value[3]);
-    }
-    
+
+    fc = FIFO_PISO<DEPT_C, T>(fifo_c, c_piso_en, data_in, new_value[2]);
+    fa = FIFO_PISO<DEPT_D, T>(fifo_d, d_piso_en, data_in, new_value[3]);
+
     if (mode == FORWARD_NTT_MODE)
     {
         data_out[0] = fa;
@@ -258,7 +257,6 @@ void read_write_fifo(enum OPERATION mode,
     {
         read_fifo<T>(data_out, count, fifo_a, fifo_b, fifo_c, fifo_d);
     }
-    
 }
 
 #endif

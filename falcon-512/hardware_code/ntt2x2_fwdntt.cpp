@@ -200,14 +200,14 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
 
             /* ============================================== */
             // Rolling FIFO for index of RAM
-            unsigned fi = FIFO<DEPT_W - 2>(fifo_i, ram_i);
+            unsigned fi = FIFO<2>(fifo_i, ram_i);
 
             /* 
              * PIPO for twiddle factor, delay it by DEPT_W
              */
             w_in[0] = w_in[2];
             w_in[1] = w_in[3];
-            PIPO<DEPT_W - 2, data_t>(w_out, fifo_w, w_in);
+            PIPO<2, data_t>(w_out, fifo_w, w_in);
             /* ============================================== */
 
             // Calculate
@@ -242,17 +242,17 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
         }
     }
 
-    for (unsigned i = 0; i < DEPT_W - 2; i++)
+    for (unsigned i = 0; i < 2; i++)
     {
         // Extract left over data in FIFO to data_in
         read_write_fifo<data_t>(FORWARD_NTT_MODE_BYPASS, data_fifo, data_in, null, fifo_a,
                                 fifo_b, fifo_c, fifo_d, count);
 
         // Rolling FIFO for index of RAM
-        unsigned fi = FIFO<DEPT_W - 2>(fifo_i, 0);
+        unsigned fi = FIFO<2>(fifo_i, 0);
 
         // Buffer twiddle
-        PIPO<DEPT_W - 2, data_t>(w_out, fifo_w, null);
+        PIPO<2, data_t>(w_out, fifo_w, null);
 
         buttefly_circuit<data2_t, data_t>(data_out, data_fifo,
                                           w_out, FORWARD_NTT_MODE_BYPASS);

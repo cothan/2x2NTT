@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include "config.h"
 
-
 void update_indexes(unsigned tw_i[4],
                     const unsigned tw_base_i[4],
                     const unsigned s, enum OPERATION mode);
