@@ -154,7 +154,7 @@ int main()
         ret |= ntt2x2_MUL(r_mul, test_ram);
         ret |= ntt2x2_NTT(r_ntt);
         ret |= ntt2x2_INVNTT(r_invntt);
-        // ret |= polymul(a, b);
+        ret |= polymul(a, b);
 
         if (ret)
         {

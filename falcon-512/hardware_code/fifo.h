@@ -226,16 +226,12 @@ void read_write_fifo(enum OPERATION mode,
         fb = FIFO_PISO<DEPT_B, T>(fifo_b, b_piso_en, data_in, new_value[1]);
     }
     
-    if (mode == INVERSE_NTT_MODE_BYPASS)
-    {
-
-    }
-    else
+    if (mode != INVERSE_NTT_MODE_BYPASS)
     {
         fc = FIFO_PISO<DEPT_C, T>(fifo_c, c_piso_en, data_in, new_value[2]);
         fa = FIFO_PISO<DEPT_D, T>(fifo_d, d_piso_en, data_in, new_value[3]);
     }
-
+    
     if (mode == FORWARD_NTT_MODE)
     {
         data_out[0] = fa;
@@ -243,12 +239,19 @@ void read_write_fifo(enum OPERATION mode,
         data_out[2] = fb;
         data_out[3] = fd;
     }
-    else if ((mode == FORWARD_NTT_MODE_BYPASS) || 
-             (mode == INVERSE_NTT_MODE_BYPASS))
+    else if (mode == FORWARD_NTT_MODE_BYPASS)
     {
         data_out[0] = fb2[0];
         data_out[1] = fd2[0];
         data_out[2] = fb2[1];
+        data_out[3] = fd2[1];
+    }
+    else if (mode == INVERSE_NTT_MODE_BYPASS)
+    {
+        // TODO: fix twist twice
+        data_out[0] = fb2[0];
+        data_out[1] = fb2[1];
+        data_out[2] = fd2[0];
         data_out[3] = fd2[1];
     }
     else

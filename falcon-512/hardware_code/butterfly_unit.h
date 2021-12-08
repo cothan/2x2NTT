@@ -173,10 +173,16 @@ void buttefly_circuit(T data_out[4], const T data_in[4], const T w[4], enum OPER
         break;
     
     case FORWARD_NTT_MODE_BYPASS:
-    case INVERSE_NTT_MODE_BYPASS:
         data_out[0] = save_a;
         data_out[1] = save_b;
         data_out[2] = save_c;
+        data_out[3] = save_d;
+        break;
+    
+    case INVERSE_NTT_MODE_BYPASS:
+        data_out[0] = save_a;
+        data_out[1] = save_c;
+        data_out[2] = save_b;
         data_out[3] = save_d;
         break;
 
