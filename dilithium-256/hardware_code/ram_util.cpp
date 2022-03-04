@@ -48,24 +48,10 @@ void read_twiddle(data_t data_out[4], enum OPERATION mode, const unsigned tw_i[4
     unsigned i2 = tw_i[1];
     unsigned i3 = tw_i[2];
     unsigned i4 = tw_i[3];
-    switch (mode)
-    {
-    case FORWARD_NTT_MODE:
-        data_out[0] = zetas_barrett[i1];
-        data_out[1] = zetas_barrett[i2];
-        data_out[2] = zetas_barrett[i3];
-        data_out[3] = zetas_barrett[i4];
-        break;
 
-    case INVERSE_NTT_MODE:
-        data_out[0] = -zetas_barrett[i1];
-        data_out[1] = -zetas_barrett[i2];
-        data_out[2] = -zetas_barrett[i3];
-        data_out[3] = -zetas_barrett[i4];
-        break;
-
-    default:
-        printf("Not supported\n");
-        break;
-    }
+    data_out[0] = zetas_barrett[i1];
+    data_out[1] = zetas_barrett[i2];
+    data_out[2] = zetas_barrett[i3];
+    data_out[3] = zetas_barrett[i4];
+    
 }
