@@ -93,7 +93,7 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             resolve_twiddle(tw_i, &last, tw_base_i, k, l, mode);
 
             // Read twiddle
-            read_twiddle(w_in, mode, tw_i);
+            read_twiddle(w_in, tw_i);
 
             /* ============================================== */
 
