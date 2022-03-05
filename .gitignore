@@ -51,22 +51,6 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-test_func/.gdb_history
-test_func/log
-test_func/test_ntt_mul
-test_func/test_ntt
-test_func/test_ntt_wiki
-test_func/test_ntt_copy
-test_func/test_ntt_dit_dif
 *.json
 *.pyc
-dilithium/ntt2x2
-dilithium/.gdb_history
-dilithium/ntt_test
-dilithium/test
-dilithium/ntt2x2_test
-falcon-1024/hardware_code/*.log
-falcon-1024/reference_code/ref_test_ntt_ntt2x2
-falcon-1024/hardware_code/ntt2x2_test
-falcon-512/hardware_code/ntt2x2_test
-falcon-512/reference_code/N = 8.py
+
