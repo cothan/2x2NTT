@@ -6,9 +6,9 @@
 
 // ================ FORWARD NTT 2x2 ========================
 
-#define ctbf(a, b, z, t)               \
-    t = ((data2_t)b * z) % FALCON_Q;  \
-    b = (a + FALCON_Q - t) % FALCON_Q; \
+#define ctbf(a, b, z, t)             \
+    t = ((data2_t)b * z) % FALCON_Q; \
+    b = (a - t) % FALCON_Q;          \
     a = (a + t) % FALCON_Q;
 
 void ntt2x2_ref(data_t a[FALCON_N])
@@ -41,7 +41,7 @@ void ntt2x2_ref(data_t a[FALCON_N])
 #if DEBUG == 2
                 printf("i :%3u, %3u, %3u, %3u,\n", a1, b1, a2, b2);
                 printf("w :%3u, %3u, %3u, %3u,\n", zeta1, zeta1, zeta2[0], zeta2[1]);
-#endif 
+#endif
 
                 // Left
                 // a1 - b1, a2 - b2
@@ -71,7 +71,7 @@ void ntt2x2_ref(data_t a[FALCON_N])
                 a[j + 3 * len] = b2;
 #if DEBUG == 2
                 printf("o :%3u, %3u, %3u, %3u,\n\n", a1, a2, b1, b2);
-#endif 
+#endif
             }
         }
     }
@@ -80,18 +80,18 @@ void ntt2x2_ref(data_t a[FALCON_N])
 
 // ================ INVERSE NTT 2x2 ========================
 
-#define gsbf(a, b, z, t)               \
-    t = (a + FALCON_Q - b) % FALCON_Q; \
-    a = (a + b) % FALCON_Q;            \
+#define gsbf(a, b, z, t)    \
+    t = (a - b) % FALCON_Q; \
+    a = (a + b) % FALCON_Q; \
     b = ((data2_t)t * z) % FALCON_Q;
 
 #define div2(t) ((t & 1) ? ((t >> 1) + (FALCON_Q + 1) / 2) : (t >> 1))
 
-#define gsbf_div2(a, b, z, t)          \
-    t = (a + FALCON_Q - b) % FALCON_Q; \
-    t = div2(t);                       \
-    a = (a + b) % FALCON_Q;            \
-    a = div2(a);                       \
+#define gsbf_div2(a, b, z, t) \
+    t = (a - b) % FALCON_Q;   \
+    t = div2(t) % FALCON_Q;   \
+    a = (a + b) % FALCON_Q;   \
+    a = div2(a) % FALCON_Q;   \
     b = ((data2_t)t * z) % FALCON_Q;
 
 void invntt2x2_ref(data_t a[FALCON_N])
@@ -110,9 +110,9 @@ void invntt2x2_ref(data_t a[FALCON_N])
             k1[0] = ((FALCON_N - i / 2) >> l) - 1;
             k1[1] = k1[0] - 1;
             k2 = ((FALCON_N - i / 2) >> (l + 1)) - 1;
-            zeta1[0] = FALCON_Q - zetas_barrett[k1[0]];
-            zeta1[1] = FALCON_Q - zetas_barrett[k1[1]];
-            zeta2 = FALCON_Q - zetas_barrett[k2];
+            zeta1[0] = -zetas_barrett[k1[0]];
+            zeta1[1] = -zetas_barrett[k1[1]];
+            zeta2 = -zetas_barrett[k2];
 
             for (unsigned j = i; j < i + len; j++)
             {

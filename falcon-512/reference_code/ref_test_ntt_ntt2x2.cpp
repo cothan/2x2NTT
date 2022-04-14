@@ -9,9 +9,9 @@ int compare_array(data_t *a_gold, data_t *a)
 {
     for (int i = 0; i < FALCON_N; i++)
     {
-        if (a_gold[i] != a[i])
+        if ((a_gold[i] != a[i]) && (a_gold[i] + FALCON_Q != a[i]) && (a_gold[i] - FALCON_Q != a[i]))
         {
-            printf("%d: %u != %u\n", i, a_gold[i], a[i]);
+            printf("%d: %d != %d\n", i, a_gold[i], a[i]);
             return 1;
         }
     }
@@ -75,4 +75,4 @@ int main()
  * Compile flags
  * gcc -o ref_test_ntt_ntt2x2 ref_ntt.c ref_ntt2x2.c ../consts.cpp  ref_test_ntt_ntt2x2.c -Wall
  * ./ref_test_ntt_ntt2x2
-*/
+ */

@@ -18,12 +18,12 @@ void ntt(data_t a[FALCON_N])
             {
 
                 t = ((data2_t)zeta * a[j + len]) % FALCON_Q;
-                a[j + len] = (a[j] + FALCON_Q - t) % FALCON_Q;
+                a[j + len] = (a[j] - t) % FALCON_Q;
                 a[j] = (a[j] + t) % FALCON_Q;
 
+#if DEBUG == 5
                 m = a[j];
                 n = a[j + len];
-#if DEBUG == 5
                 printf("%d: %u, %u = %u, %u | %u\n", len, j, j + len, m, n, k);
 #endif
             }
@@ -63,17 +63,17 @@ void invntt(data_t a[FALCON_N])
         for (start = 0; start < FALCON_N; start = j + len)
         {
             // Plus Q so it is alway positive
-            zeta = FALCON_Q - zetas_barrett[--k];
+            zeta = - zetas_barrett[--k];
             for (j = start; j < start + len; ++j)
             {
                 t = a[j];
                 a[j] = (t + a[j + len]) % FALCON_Q;
-                w = (t + FALCON_Q - a[j + len]) % FALCON_Q;
+                w = (t - a[j + len]) % FALCON_Q;
                 a[j + len] = ((data2_t)zeta * w) % FALCON_Q;
 
+#if DEBUG == 5
                 m = a[j];
                 n = a[j + len];
-#if DEBUG == 5
                 printf("%d: %u, %u = %u, %u | %u\n", len, j, j + len, m, n, k);
 #endif
             }

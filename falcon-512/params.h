@@ -4,15 +4,14 @@
 #include <stdint.h>
 
 // Define size of falcon
-typedef uint16_t data_t;
-typedef uint32_t data2_t;
+typedef int16_t data_t;
+typedef int32_t data2_t;
 
 #define FALCON_Q 12289 // 2**13 + 2**12 + 1
-#define FALCON_Q0I 12287
+#define FALCON_Q0I (-12287)
 
-// This directory support FALCON_MODE == [0,1,5]
+// This directory support FALCON_MODE == [1]
 #define FALCON_MODE 1
-
 
 #if FALCON_MODE == 0
 #define FALCON_LOGN 8
@@ -27,6 +26,5 @@ typedef uint32_t data2_t;
 #define FALCON_N 1024
 
 #endif
-
 
 #endif
