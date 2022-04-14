@@ -23,10 +23,11 @@ void butterfly(enum OPERATION mode, T *bj, T *bjlen,
          * t = a[j];
          * a[j] = t + a[j + len];
          * a[j + len] = t - a[j + len];
-         * a[j + len] = ((uint32_t)zeta * a[j + len]) % FALCON_Q; 
+         * a[j + len] = ((int32_t)zeta * a[j + len]) % FALCON_Q; 
          */
         aj2 = (aj1 + ajlen1) % FALCON_Q;
-        ajlen2 = (aj1 + FALCON_Q - ajlen1) % FALCON_Q;
+        // Embeded minus sign from zeta to the multiplication
+        ajlen2 = (ajlen1 - aj1) % FALCON_Q;
     }
     else
     {
@@ -47,7 +48,7 @@ void butterfly(enum OPERATION mode, T *bj, T *bjlen,
          * a[j] = a[j] + t; 
          */
         // NTT
-        ajlen4 = (aj3 + FALCON_Q - ajlen3) % FALCON_Q;
+        ajlen4 = (aj3 - ajlen3) % FALCON_Q;
         aj4 = (aj3 + ajlen3) % FALCON_Q;
     }
     else

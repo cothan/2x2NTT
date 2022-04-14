@@ -113,7 +113,7 @@ int polymul(data_t a[FALCON_N], data_t b[FALCON_N])
     return ret;
 }
 
-#define TESTS 1000000
+#define TESTS 100000
 
 int main()
 {
@@ -143,8 +143,7 @@ int main()
             test_ram[i] = t3;
 
             t4 = rand() % FALCON_Q;
-            // r_ntt[i] = t4;
-            r_ntt[i] = i;
+            r_ntt[i] = t4;
 
             t5 = rand() % FALCON_Q;
             a[i] = t5 % FALCON_Q;
