@@ -76,7 +76,7 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             resolve_twiddle(tw_i, &last, tw_base_i, k, l, mode);
 
             // Read Twiddle
-            read_twiddle(w_in, mode, tw_i);
+            read_twiddle(w_in, tw_i);
 
             /* ============================================== */
             // Rolling FIFO for index of RAM
@@ -196,7 +196,7 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             resolve_twiddle(tw_i, &last, tw_base_i, k, l, FORWARD_NTT_MODE_BYPASS);
 
             // Read Twiddle
-            read_twiddle(w_in, mode, tw_i);
+            read_twiddle(w_in, tw_i);
 
             /* ============================================== */
             // Rolling FIFO for index of RAM
