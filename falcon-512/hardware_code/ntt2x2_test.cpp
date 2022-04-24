@@ -132,7 +132,6 @@ int main()
     {
         for (int i = 0; i < FALCON_N; i++)
         {
-            // t1 = i;
             t1 = rand() % FALCON_Q;
             r_invntt[i] = t1;
 
