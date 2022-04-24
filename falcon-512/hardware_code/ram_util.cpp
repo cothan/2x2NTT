@@ -70,7 +70,7 @@ void get_twiddle_factors(data_t data_out[4], int i, int level, OPERATION mode)
 
     case FORWARD_NTT_MODE_BYPASS:
         mask = (1 << level) - 1;
-        bar = scale_twiddle(level);
+        bar = scale_twiddle(FALCON_LOGN);
         index = bar + (i & mask);
 
         i1 = i2 = 2; // 0 value
@@ -80,7 +80,7 @@ void get_twiddle_factors(data_t data_out[4], int i, int level, OPERATION mode)
 
     case INVERSE_NTT_MODE_BYPASS:
         mask = (1 << (FALCON_LOGN - 2 - level)) - 1;
-        bar = scale_twiddle(FALCON_LOGN - level);
+        bar = scale_twiddle(FALCON_LOGN);
         index = bar + ((BRAM_DEPT - 1 - i) & mask);
 
         i1 = 1;
