@@ -1,5 +1,4 @@
 #include "consts_hw.h"
-#include "../consts.h"
 #include "config.h"
 #include <stdio.h>
 
