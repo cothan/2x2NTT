@@ -10,7 +10,7 @@
 
 /* Inverse NTT
  * Input: ram, zetas_barret, mode, mapping
- * Output: ram 
+ * Output: ram
  */
 void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
 {
@@ -24,10 +24,9 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
 
     // Initialize Forward NTT
     unsigned fw_ntt_pattern[] = {6, 4, 2, 0, 6};
-    unsigned s, last = 0;
+    unsigned s;
 
     // Initialize twiddle
-    unsigned tw_i[4], tw_base_i[4];
     data_t w_in[4];
 
     // Intialize index
@@ -66,11 +65,8 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             // Read ram by address
             read_ram(data_in, ram, ram_i);
 
-            // Prepare twiddle
-            resolve_twiddle(tw_i, &last, tw_base_i, k, l, mode);
-
             // Read twiddle
-            read_twiddle(w_in, tw_i);
+            get_twiddle_factors(w_in, i, l, mode);
 
             /* ============================================== */
 
@@ -127,7 +123,6 @@ void ntt2x2_invntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
                 ++j;
             }
 
-            update_indexes(tw_i, tw_base_i, l, mode);
         }
         /* ============================================== */
     }
