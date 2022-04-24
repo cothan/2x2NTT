@@ -26,10 +26,9 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
 #else
 #error "FALCON_MODE supports [0,1,5]"
 #endif
-    unsigned s, last = 0;
+    unsigned s;
 
     // Initialize twiddle
-    unsigned tw_i[4] = {0}, tw_base_i[4] = {0};
     data_t w_in[4], w_out[4];
 
     // Intialize index
@@ -63,7 +62,6 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             unsigned ram_i = resolve_address(mapping, addr);
 
             // Read ram by address
-            // data_in = ram[ram_i];
             read_ram(data_in, ram, ram_i);
 
             // Write data_in to FIFO, extract output to data_fifo
@@ -72,18 +70,14 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
                                     fifo_b, fifo_c, fifo_d, count);
             count = (count + 1) & 3;
 
-            // Prepare twiddle
-            resolve_twiddle(tw_i, &last, tw_base_i, k, l, mode);
-
             // Read Twiddle
-            read_twiddle(w_in, tw_i);
+            get_twiddle_factors(w_in, i, l, mode);
 
             /* ============================================== */
             // Rolling FIFO for index of RAM
             unsigned fi = FIFO<DEPT_W>(fifo_i, ram_i);
 
             // printf("--------------%d - %d <= %d\n", count, ram_i, addr);
-            // print_array<unsigned>(tw_i, 4, "twiddle");
             // print_array<data_t>(fifo_i, DEPT_W, "FIFO_I");
             // print_array<data_t>(fifo_a, DEPT_A, "FIFO_A");
             // print_array<data_t>(fifo_b, DEPT_B, "FIFO_B");
@@ -126,7 +120,6 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             if (k + (1 << s) < BRAM_DEPT)
             {
                 k += (1 << s);
-                // printf("k = %d\n", k);
             }
             else
             {
@@ -134,7 +127,6 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
                 ++j;
             }
 
-            update_indexes(tw_i, tw_base_i, l, mode);
         }
         /* ============================================== */
     }
@@ -163,7 +155,6 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
     }
 
     count = 1;
-    // For this loop, bypass in BF then store right back, like in MUL
     for (unsigned l = (FALCON_LOGN - (FALCON_LOGN & 1)); l < FALCON_LOGN; l++)
     {
         for (unsigned i = 0; i < BRAM_DEPT; i++)
@@ -189,14 +180,16 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
             // In this mode, new_value[4] = null[4]
             read_write_fifo<data_t>(FORWARD_NTT_MODE_BYPASS, data_fifo, data_in, null, fifo_a,
                                     fifo_b, fifo_c, fifo_d, count);
+            // print_array<data_t>(fifo_a, DEPT_A, "FIFO_A");
+            // print_array<data_t>(fifo_b, DEPT_B, "FIFO_B");
+            // print_array<data_t>(fifo_c, DEPT_C, "FIFO_C");
+            // print_array<data_t>(fifo_d, DEPT_D, "FIFO_D");
+            // print_array<data_t>(data_fifo, 4, "DATA_F");
             // Increase by "2" rather than 1, to use only DEPT: 4 and 6
             count = (count + 2) & 3;
 
-            // Prepare twiddle
-            resolve_twiddle(tw_i, &last, tw_base_i, k, l, FORWARD_NTT_MODE_BYPASS);
-
             // Read Twiddle
-            read_twiddle(w_in, tw_i);
+            get_twiddle_factors(w_in, i, l, FORWARD_NTT_MODE_BYPASS);
 
             /* ============================================== */
             // Rolling FIFO for index of RAM
@@ -238,7 +231,6 @@ void ntt2x2_fwdntt(bram *ram, enum OPERATION mode, enum MAPPING mapping)
                 ++j;
             }
 
-            update_indexes(tw_i, tw_base_i, l, mode);
         }
     }
 
