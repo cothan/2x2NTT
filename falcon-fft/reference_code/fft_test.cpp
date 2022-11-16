@@ -192,29 +192,29 @@ int test_variant_fft(unsigned logn, unsigned tests)
 int main(void)
 {
 
-    // printf("\ntest_with_adj_FFT: ");
-    // printf("\nCompare split FFT versus adjacent FFT setting\n");
-    // for (int logn = 2; logn < 11; logn++)
-    // {
-    //     if (test_with_adj_FFT(logn, ITERATIONS))
-    //     {
-    //         printf("Error at LOGN = %d\n", logn);
-    //         return 1;
-    //     }
-    // }
-    // printf("OK\n");
+    printf("\ntest_with_adj_FFT: ");
+    printf("\nCompare split FFT versus adjacent FFT setting\n");
+    for (int logn = 2; logn < 11; logn++)
+    {
+        if (test_with_adj_FFT(logn, ITERATIONS))
+        {
+            printf("Error at LOGN = %d\n", logn);
+            return 1;
+        }
+    }
+    printf("OK\n");
 
-    // printf("\ntest_variant_fft: ");
-    // printf("\nCompare my (loop separated) FFT versus my (without loop separateed) FFT code\n");
-    // for (int logn = 2; logn < 11; logn++)
-    // {
-    //     if (test_variant_fft(logn, ITERATIONS))
-    //     {
-    //         printf("Error at LOGN = %d\n", logn);
-    //         return 1;
-    //     }
-    // }
-    // printf("OK\n");
+    printf("\ntest_variant_fft: ");
+    printf("\nCompare my (loop separated) FFT versus my (without loop separateed) FFT code\n");
+    for (int logn = 2; logn < 11; logn++)
+    {
+        if (test_variant_fft(logn, ITERATIONS))
+        {
+            printf("Error at LOGN = %d\n", logn);
+            return 1;
+        }
+    }
+    printf("OK\n");
 
     printf("\ntest_with_adj_short_FFT: ");
     printf("\nCompare adjacent FFT setting versus short adjacent FFT\n");

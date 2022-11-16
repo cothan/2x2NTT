@@ -2,8 +2,8 @@ CC = g++
 CFLAGS = -O3 -Wall
 RM = /bin/rm 
 
-HEADERS = fft.h   consts.h   params.h
-SOURCES = fft.cpp consts.cpp 
+HEADERS = fft.h   ../consts.h   params.h
+SOURCES = fft.cpp ../consts.cpp 
 
 .PHONY: all clean 
 

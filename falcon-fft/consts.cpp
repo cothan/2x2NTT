@@ -23,7 +23,6 @@
  */
 
 #include "consts.h"
-#include "params.h"
 
 const fpr fpr_p2_tab[] = {
 	2.00000000000,

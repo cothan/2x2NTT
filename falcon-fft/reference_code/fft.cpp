@@ -21,7 +21,7 @@
 
 #include <assert.h>
 #include "stddef.h"
-#include "consts.h"
+#include "../consts.h"
 #include "fft.h"
 #include <stdio.h>
 
@@ -262,8 +262,6 @@ void inv_FFT_short(fpr *f, unsigned logn)
                 a_im = f[j + hn];
                 b_re = f[j + len];
                 b_im = f[j + len + hn];
-
-                printf("1st: %d\n", j);
 
                 FPC_ADD(f[j], f[j + hn], a_re, a_im, b_re, b_im);
                 FPC_SUB(t_re, t_im, a_re, a_im, b_re, b_im);
@@ -521,7 +519,6 @@ void fwd_FFT_adj_short(fpr *f, unsigned logn)
 void inv_FFT_adj_short(fpr *f, unsigned logn)
 {
     const unsigned n = 1 << logn;
-    const unsigned hn = n >> 1;
     unsigned len, start, j, k;
     fpr zeta_re, zeta_im, t_re, t_im, a_re, a_im, b_re, b_im;
 
