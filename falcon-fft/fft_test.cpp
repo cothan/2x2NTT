@@ -123,7 +123,7 @@ int test_with_adj_FFT(unsigned logn, unsigned tests)
 
 int test_with_adj_short_FFT(unsigned logn, unsigned tests)
 {
-    fpr f[1024], g[1024];
+    fpr f[1024] = {0}, g[1024] = {0};
     const unsigned n = 1 << logn;
 
     for (int j = 0; j < tests; j++)
@@ -137,7 +137,7 @@ int test_with_adj_short_FFT(unsigned logn, unsigned tests)
         fwd_FFT_adj_short(f, logn);
         fwd_FFT_adj(g, logn);
 
-        if (cmp_double(f, g, logn))
+        if (cmp_double(f, g, 10))
         {
             printf("%d: Forward FFT is wrong\n", logn);
             return 1;
@@ -146,7 +146,7 @@ int test_with_adj_short_FFT(unsigned logn, unsigned tests)
         inv_FFT_adj_short(f, logn);
         inv_FFT_adj(g, logn);
 
-        if (cmp_double(f, g, logn))
+        if (cmp_double(f, g, 10))
         {
             printf("%d: Inverse FFT is wrong\n", logn);
             return 1;
@@ -218,10 +218,10 @@ int main(void)
 
     printf("\ntest_with_adj_short_FFT: ");
     printf("\nCompare adjacent FFT setting versus short adjacent FFT\n");
-    for (int logn = 2; logn < 6; logn++)
+    for (int logn = 2; logn < 11; logn++)
     {
-        // if (test_with_adj_short_FFT(logn, ITERATIONS))
-        if (test_with_adj_short_FFT(logn, 1))
+        if (test_with_adj_short_FFT(logn, ITERATIONS))
+        // if (test_with_adj_short_FFT(logn, 1))
         {
             printf("Error at LOGN = %d\n", logn);
             printf("=====================\n");

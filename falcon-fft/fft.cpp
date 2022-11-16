@@ -25,7 +25,7 @@
 #include "fft.h"
 #include <stdio.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
 void FFT(fpr *f, unsigned logn)
 {
