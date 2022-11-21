@@ -134,7 +134,7 @@ int test_with_adj_short_FFT(unsigned logn, unsigned tests)
             g[i] = f[i];
         }
         
-        fwd_FFT_adj_short(f, logn);
+        fwd_FFT_adj_short1(f, logn);
         fwd_FFT_adj(g, logn);
 
         if (cmp_double(f, g, 10))
@@ -218,7 +218,7 @@ int main(void)
 
     printf("\ntest_with_adj_short_FFT: ");
     printf("\nCompare adjacent FFT setting versus short adjacent FFT\n");
-    for (int logn = 2; logn < 11; logn++)
+    for (int logn = 3; logn < 11; logn++)
     {
         if (test_with_adj_short_FFT(logn, ITERATIONS))
         // if (test_with_adj_short_FFT(logn, 1))
