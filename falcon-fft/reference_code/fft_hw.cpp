@@ -7,9 +7,7 @@ void fwd_FFT_adj_short1(fpr *f, unsigned logn)
     const unsigned n = 1 << logn;
     const unsigned hn = n >> 1;
     unsigned len, start, j, k;
-    fpr zeta_re, zeta_im, t_re, t_im, a_re, a_im,
-        b_re, b_im, c_re, c_im, d_re, d_im;
-
+    fpr zeta_re, zeta_im, t_re, t_im, a_re, a_im, b_re, b_im;
     /*
      * We read the twiddle table in forward order
      */
@@ -19,7 +17,7 @@ void fwd_FFT_adj_short1(fpr *f, unsigned logn)
     fpr_tab = fpr_table[level++];
     zeta_re = fpr_tab[0];
     zeta_im = fpr_tab[1];
-    for (j = 0; j < hn; j += 4)
+    for (j = 0; j < hn; j += 2)
     {
         a_re = f[j];
         a_im = f[j + 1];
@@ -29,22 +27,13 @@ void fwd_FFT_adj_short1(fpr *f, unsigned logn)
         FPC_MUL(t_re, t_im, b_re, b_im, zeta_re, zeta_im);
         FPC_SUB(f[j + hn], f[j + hn + 1], a_re, a_im, t_re, t_im);
         FPC_ADD(f[j], f[j + 1], a_re, a_im, t_re, t_im);
-
-        c_re = f[j + 2];
-        c_im = f[j + 3];
-        d_re = f[j + hn + 2];
-        d_im = f[j + hn + 3];
-
-        FPC_MUL(t_re, t_im, d_re, d_im, zeta_re, zeta_im);
-        FPC_SUB(f[j + hn + 2], f[j + hn + 3], c_re, c_im, t_re, t_im);
-        FPC_ADD(f[j + 2], f[j + 3], c_re, c_im, t_re, t_im);
     }
 
     for (len = hn / 2; len > 1; len >>= 1)
     {
         fpr_tab = fpr_table[level++];
         k = 0;
-        for (start = 0; start < n; start += 4 * len)
+        for (start = 0; start < n;)
         {
             zeta_re = fpr_tab[k];
             zeta_im = fpr_tab[k + 1];
@@ -60,16 +49,21 @@ void fwd_FFT_adj_short1(fpr *f, unsigned logn)
                 FPC_MUL(t_re, t_im, b_re, b_im, zeta_re, zeta_im);
                 FPC_SUB(f[j + len], f[j + len + 1], a_re, a_im, t_re, t_im);
                 FPC_ADD(f[j], f[j + 1], a_re, a_im, t_re, t_im);
-
-                c_re = f[j + 2 * len];
-                c_im = f[j + 2 * len + 1];
-                d_re = f[j + 3 * len];
-                d_im = f[j + 3 * len + 1];
-
-                FPC_MUL(t_re, t_im, d_re, d_im, zeta_re, zeta_im);
-                FPC_SUBJ(f[j + 3 * len], f[j + 3 * len + 1], c_re, c_im, t_re, t_im);
-                FPC_ADDJ(f[j + 2 * len], f[j + 2 * len + 1], c_re, c_im, t_re, t_im);
             }
+            start += 2 * len;
+
+            for (j = start; j < start + len; j += 2)
+            {
+                a_re = f[j];
+                a_im = f[j + 1];
+                b_re = f[j + len];
+                b_im = f[j + len + 1];
+
+                FPC_MUL(t_re, t_im, b_re, b_im, zeta_re, zeta_im);
+                FPC_SUBJ(f[j + len], f[j + len + 1], a_re, a_im, t_re, t_im);
+                FPC_ADDJ(f[j], f[j + 1], a_re, a_im, t_re, t_im);
+            }
+            start += 2 * len;
         }
     }
 }
@@ -115,7 +109,7 @@ void fwd_FFT_adj_short(fpr *f, unsigned logn)
 #endif
             }
 
-            start = j + len;
+            start += 2 * len;
             if (start >= n)
             {
                 // printf("fwd break\n");
@@ -140,8 +134,84 @@ void fwd_FFT_adj_short(fpr *f, unsigned logn)
 #endif
             }
 
-            start = j + len;
+            start += 2 * len;
         }
+    }
+}
+
+void inv_FFT_adj_short1(fpr *f, unsigned logn)
+{
+    const unsigned n = 1 << logn;
+    const unsigned hn = n >> 1;
+    unsigned len, start, j, k;
+    fpr zeta_re, zeta_im, t_re, t_im, a_re, a_im, b_re, b_im;
+
+    /*
+     * This time we read the table in reverse order,
+     * so the pointer point to the end of the table
+     */
+    int level = logn - 2;
+    const fpr *fpr_tab_inv = NULL;
+
+    for (len = 2; len < hn; len <<= 1)
+    {
+        fpr_tab_inv = fpr_table[level--];
+        k = 0;
+
+        for (start = 0; start < n;)
+        {
+            // Conjugate of zeta is embeded in MUL
+            zeta_re = fpr_tab_inv[k];
+            zeta_im = fpr_tab_inv[k + 1];
+            k += 2;
+
+            for (j = start; j < start + len; j += 2)
+            {
+                a_re = f[j];
+                a_im = f[j + 1];
+                b_re = f[j + len];
+                b_im = f[j + len + 1];
+
+                FPC_ADD(f[j], f[j + 1], a_re, a_im, b_re, b_im);
+                FPC_SUB(t_re, t_im, a_re, a_im, b_re, b_im);
+                FPC_MUL_CONJ(f[j + len], f[j + len + 1], t_re, t_im, zeta_re, zeta_im);
+            }
+            start += 2 * len;
+
+            for (j = start; j < start + len; j += 2)
+            {
+                a_re = f[j];
+                a_im = f[j + 1];
+                b_re = f[j + len];
+                b_im = f[j + len + 1];
+
+                /*
+                 * Notice we swap the (a - b) to (b - a) in FPC_SUB
+                 */
+                FPC_ADD(f[j], f[j + 1], a_re, a_im, b_re, b_im);
+                FPC_SUB(t_re, t_im, b_re, b_im, a_re, a_im);
+                FPC_MUL_CONJ_J_m(f[j + len], f[j + len + 1], t_re, t_im, zeta_re, zeta_im);
+            }
+            start += 2 * len;
+        }
+    }
+
+    fpr_tab_inv = fpr_table[0];
+    zeta_re = (fpr_tab_inv[0] * fpr_p2_tab[logn]);
+    zeta_im = (fpr_tab_inv[1] * fpr_p2_tab[logn]);
+    for (j = 0; j < hn; j += 2)
+    {
+        a_re = f[j];
+        a_im = f[j + 1];
+        b_re = f[j + hn];
+        b_im = f[j + hn + 1];
+
+        FPC_SUB(t_re, t_im, a_re, a_im, b_re, b_im);
+        FPC_ADD(f[j], f[j + 1], a_re, a_im, b_re, b_im);
+        FPC_MUL_CONJ(f[j + hn], f[j + hn + 1], t_re, t_im, zeta_re, zeta_im);
+
+        f[j] *= fpr_p2_tab[logn];
+        f[j + 1] *= fpr_p2_tab[logn];
     }
 }
 
@@ -188,7 +258,7 @@ void inv_FFT_adj_short(fpr *f, unsigned logn)
 #endif
             }
 
-            start = j + len;
+            start += 2 * len;
             if (start >= n)
             {
                 // printf("inv break\n");
@@ -216,7 +286,7 @@ void inv_FFT_adj_short(fpr *f, unsigned logn)
 #endif
             }
 
-            start = j + len;
+            start += 2 * len;
         }
     }
 
