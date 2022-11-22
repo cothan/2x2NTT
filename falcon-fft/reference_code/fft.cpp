@@ -63,7 +63,7 @@ void FFT(fpr *f, unsigned logn)
     {
         fpr_tab = fpr_table[level++];
         k = 0;
-        for (start = 0; start < hn; start = j + len)
+        for (start = 0; start < hn;)
         {
             zeta_re = fpr_tab[k++];
             zeta_im = fpr_tab[k++];
@@ -79,8 +79,7 @@ void FFT(fpr *f, unsigned logn)
                 FPC_SUB(f[j + len], f[j + len + hn], a_re, a_im, t_re, t_im);
                 FPC_ADD(f[j], f[j + hn], a_re, a_im, t_re, t_im);
             }
-
-            start = j + len;
+            start += 2 * len;
 
             for (j = start; j < start + len; j += 1)
             {
@@ -93,6 +92,7 @@ void FFT(fpr *f, unsigned logn)
                 FPC_SUBJ(f[j + len], f[j + len + hn], a_re, a_im, t_re, t_im);
                 FPC_ADDJ(f[j], f[j + hn], a_re, a_im, t_re, t_im);
             }
+            start += 2 * len;
         }
     }
 }
@@ -119,7 +119,7 @@ void iFFT(fpr *f, unsigned logn)
     {
         fpr_tab_inv = fpr_table[level--];
         k = 0;
-        for (start = 0; start < hn; start = j + len)
+        for (start = 0; start < hn;)
         {
             // Conjugate of zeta is embeded in MUL
             zeta_re = fpr_tab_inv[k++];
@@ -136,8 +136,7 @@ void iFFT(fpr *f, unsigned logn)
                 FPC_ADD(f[j], f[j + hn], a_re, a_im, b_re, b_im);
                 FPC_MUL_CONJ(f[j + len], f[j + len + hn], t_re, t_im, zeta_re, zeta_im);
             }
-
-            start = j + len;
+            start += 2 * len;
 
             for (j = start; j < start + len; j += 1)
             {
@@ -153,6 +152,7 @@ void iFFT(fpr *f, unsigned logn)
                 FPC_ADD(f[j], f[j + hn], a_re, a_im, b_re, b_im);
                 FPC_MUL_CONJ_J_m(f[j + len], f[j + len + hn], t_re, t_im, zeta_re, zeta_im);
             }
+            start += 2 * len;
         }
     }
 
@@ -193,7 +193,7 @@ void fwd_FFT_short(fpr *f, unsigned logn)
     {
         fpr_tab = fpr_table[level++];
         k = 0;
-        for (start = 0; start < hn; start = j + len)
+        for (start = 0; start < hn; start += 2 * len)
         {
             zeta_re = fpr_tab[k];
             zeta_im = fpr_tab[k + 1];
@@ -211,7 +211,7 @@ void fwd_FFT_short(fpr *f, unsigned logn)
                 FPC_ADD(f[j], f[j + hn], a_re, a_im, t_re, t_im);
             }
 
-            start = j + len;
+            start += 2 * len;
             if (start >= hn)
                 break;
 
@@ -249,7 +249,7 @@ void inv_FFT_short(fpr *f, unsigned logn)
         fpr_tab_inv = fpr_table[level--];
         k = 0;
 
-        for (start = 0; start < hn; start = j + len)
+        for (start = 0; start < hn; start += 2 * len)
         {
             // Conjugate of zeta is embeded in MUL
             zeta_re = fpr_tab_inv[k];
@@ -268,7 +268,7 @@ void inv_FFT_short(fpr *f, unsigned logn)
                 FPC_MUL_CONJ(f[j + len], f[j + len + hn], t_re, t_im, zeta_re, zeta_im);
             }
 
-            start = j + len;
+            start += 2 * len;
             if (start >= hn)
                 break;
 
@@ -330,7 +330,7 @@ void fwd_FFT_adj(fpr *f, unsigned logn)
     {
         fpr_tab = fpr_table[level++];
         k = 0;
-        for (start = 0; start < n; start = j + len)
+        for (start = 0; start < n; start += 2 * len)
         {
             zeta_re = fpr_tab[k];
             zeta_im = fpr_tab[k + 1];
@@ -348,7 +348,7 @@ void fwd_FFT_adj(fpr *f, unsigned logn)
                 FPC_ADD(f[j], f[j + 1], a_re, a_im, t_re, t_im);
             }
 
-            start = j + len;
+            start += 2 * len;
 
             for (j = start; j < start + len; j += 2)
             {
@@ -384,7 +384,7 @@ void inv_FFT_adj(fpr *f, unsigned logn)
         fpr_tab_inv = fpr_table[level--];
         k = 0;
 
-        for (start = 0; start < n; start = j + len)
+        for (start = 0; start < n; start += 2 * len)
         {
             // Conjugate of zeta is embeded in MUL
             zeta_re = fpr_tab_inv[k];
@@ -403,7 +403,7 @@ void inv_FFT_adj(fpr *f, unsigned logn)
                 FPC_MUL_CONJ(f[j + len], f[j + len + 1], t_re, t_im, zeta_re, zeta_im);
             }
 
-            start = j + len;
+            start += 2 * len;
 
             for (j = start; j < start + len; j += 2)
             {
@@ -441,4 +441,3 @@ void inv_FFT_adj(fpr *f, unsigned logn)
         f[j + 1] *= fpr_p2_tab[logn];
     }
 }
-
